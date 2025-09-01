@@ -1,0 +1,9 @@
+gymnasium
+pygame
+stable-baselines3
+torch
+torchvision
+numpy
+matplotlib
+pip-tools
+pydantic
