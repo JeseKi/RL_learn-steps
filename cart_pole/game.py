@@ -153,6 +153,7 @@ def main():
     game_over = False
     time_alive = 0.0
     steps_in_episode = 0
+    theta_hist: list[float] = []
     best_time = 0.0
 
     # 输入状态（持续施力）
@@ -184,6 +185,7 @@ def main():
                     game_over = False
                     time_alive = 0.0
                     steps_in_episode = 0
+                    theta_hist = []
                     last_save_feedback = ""
                 elif event.key in (pygame.K_LEFT, pygame.K_a):
                     force_left = True
@@ -235,9 +237,10 @@ def main():
             state = step_dynamics(state, force, dt)
             time_alive += dt
             steps_in_episode += 1
+            theta_hist.append(state[2])
 
             # 与训练一致计算奖励，但游戏里不按 max_steps 截断
-            reward, done, terminated, truncated = physics_reward_done(state, steps_in_episode, CFG)
+            reward, done, terminated, truncated = physics_reward_done(state, steps_in_episode, CFG, theta_hist)
             done = terminated
 
             if ai_enabled and train_enabled and (agent is not None) and (EnvState is not None) and (last_action_result is not None):
@@ -250,6 +253,7 @@ def main():
                 game_over = True
                 best_time = max(best_time, time_alive)
                 steps_in_episode = 0
+                theta_hist = []
 
         # 绘制倒立摆
         x, x_dot, theta, theta_dot = state

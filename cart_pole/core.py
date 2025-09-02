@@ -15,6 +15,7 @@ class CartPole:
         # 当前环境状态
         self.state: EnvState = self._env_initialize()
         self.steps: int = 0 # 当前世代步数
+        self._theta_hist: list[float] = []
         
         # 环境初始化也不需要初始化的变量
         self.total_steps: int = 0 # 总步数
@@ -22,6 +23,7 @@ class CartPole:
     def reset(self) -> EnvState:
         self.steps = 0
         self.state = self._env_initialize()
+        self._theta_hist = []
         return self.state.model_copy()
     
     def step(self, action: Action) -> Step:
@@ -30,9 +32,10 @@ class CartPole:
         next_tuple = step_dynamics((self.state.x, self.state.x_dot, self.state.theta, self.state.theta_dot), force, self.cfg)
         self.state = EnvState(x=next_tuple[0], x_dot=next_tuple[1], theta=next_tuple[2], theta_dot=next_tuple[3])
         self.steps += 1
+        self._theta_hist.append(self.state.theta)
 
         # 奖励与终止判定
-        reward, done, terminated, truncated = reward_and_done((self.state.x, self.state.x_dot, self.state.theta, self.state.theta_dot), self.steps, self.cfg)
+        reward, done, terminated, truncated = reward_and_done((self.state.x, self.state.x_dot, self.state.theta, self.state.theta_dot), self.steps, self.cfg, self._theta_hist)
 
         return Step(
             state=self.state.model_copy(),
@@ -117,8 +120,9 @@ class LinearQNet:
             max_q_s_next = np.max(q_values_s_next)  # maxₐ'Q(s',a')
             target_q = r + self.cfg.gamma * max_q_s_next
         
-        # 5. 计算TD误差
+        # 5. 计算TD误差（裁剪稳定训练）
         td_error = target_q - q_s_a
+        td_error = np.clip(td_error, -1.0, 1.0)
         
         # 6. 提取特征向量
         phi_arr = np.array([
