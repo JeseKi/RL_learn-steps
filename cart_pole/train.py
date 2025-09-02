@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Optional
 import numpy as np
 
 from core import CartPole, LinearQNet
@@ -10,6 +10,7 @@ def train(
     cfg: CartPoleConfig,
     num_episodes: int,
     log_interval: int = 100,
+    save_path: Optional[str] = None,
 ) -> List[float]:
     """
     训练函数
@@ -79,4 +80,10 @@ def train(
                   f"Epsilon: {current_epsilon:.3f}")
     
     print(f"训练完成！总步数: {total_steps}")
+    if save_path is not None:
+        try:
+            np.save(save_path, agent.W)
+            print(f"已保存权重到: {save_path}")
+        except Exception as e:
+            print(f"保存权重失败: {e}")
     return episode_rewards

@@ -1,9 +1,11 @@
+from pathlib import Path
 from typing import List
 import numpy as np
 import math
 
 from schemas import EnvState, CartPoleConfig, Action, Step, \
     Feature, AgentConfig, ActionResult, ActionEvaluation
+from physics import step_dynamics, reward_and_done
     
 class CartPole:
     def __init__(self, seed: int, cfg: CartPoleConfig) -> None:
@@ -23,46 +25,15 @@ class CartPole:
         return self.state.model_copy()
     
     def step(self, action: Action) -> Step:
-        x: float = self.state.x
-        x_dot: float = self.state.x_dot
-        theta: float = self.state.theta
-        theta_dot: float = self.state.theta_dot
-        
-        force: float = self.cfg.force_mag * action
-        
-        cos_theta = math.cos(theta)
-        sin_theta = math.sin(theta)
-        
-        temp = (force + self.cfg.pole_mass_length * theta_dot ** 2 * sin_theta) / self.cfg.total_mass
-        theta_acc = (self.cfg.gravity * sin_theta - cos_theta * temp) / (
-            self.cfg.pole_length * (4.0/3.0 - self.cfg.pole_mass * cos_theta ** 2 / self.cfg.total_mass)
-        )
-        
-        x_acc = temp - self.cfg.pole_mass_length * theta_acc * cos_theta / self.cfg.total_mass
-        
-        x = x + self.cfg.tau * x_dot
-        x_dot = x_dot + self.cfg.tau * x_acc
-        theta = theta + self.cfg.tau * theta_dot
-        theta_dot = theta_dot + self.cfg.tau * theta_acc
-        # 写回最新状态
-        self.state = EnvState(x=x, x_dot=x_dot, theta=theta, theta_dot=theta_dot)
+        # 推进一步（与 game.py/physics 保持一致）
+        force: float = float(self.cfg.force_mag * action)
+        next_tuple = step_dynamics((self.state.x, self.state.x_dot, self.state.theta, self.state.theta_dot), force, self.cfg)
+        self.state = EnvState(x=next_tuple[0], x_dot=next_tuple[1], theta=next_tuple[2], theta_dot=next_tuple[3])
         self.steps += 1
-        
-        terminated = bool(
-            x < -self.cfg.x_threshold
-            or x > self.cfg.x_threshold
-            or theta < -self.cfg.theta_threshold_radians
-            or theta > self.cfg.theta_threshold_radians
-        )
-        truncated = self.steps >= self.cfg.max_steps
-        done = terminated or truncated
-        if terminated:
-            reward = -1.0
-        else:
-            reward = 1.0 - (abs(theta) / self.cfg.theta_threshold_radians) * 0.5 \
-                    - (abs(x) / self.cfg.x_threshold) * 0.5
-            reward = max(0.1, reward)
-            
+
+        # 奖励与终止判定
+        reward, done, terminated, truncated = reward_and_done((self.state.x, self.state.x_dot, self.state.theta, self.state.theta_dot), self.steps, self.cfg)
+
         return Step(
             state=self.state.model_copy(),
             reward=reward,
@@ -160,6 +131,16 @@ class LinearQNet:
         # ∇Wᵢ = φ(s) * td_error (对于执行的动作i)
         # Wᵢ ← Wᵢ + α * td_error * φ(s)
         self.W[action_idx] += self.cfg.alpha * td_error * phi_arr
+        
+    # 保存模型
+    def save_model(self, filepath: Path | str) -> None:
+        """保存模型权重到文件"""
+        np.save(filepath, self.W)
+
+    # 加载模型
+    def load_model(self, filepath: Path | str) -> None:
+        """从文件加载模型权重"""
+        self.W = np.load(filepath)
     
     def _state_to_feature(self, state: EnvState) -> Feature:
         """将环境状态转换为手工特征"""

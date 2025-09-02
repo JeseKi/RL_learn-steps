@@ -1,3 +1,4 @@
 temp*
 AGENTS.md
 __pycache__/
+*.npy

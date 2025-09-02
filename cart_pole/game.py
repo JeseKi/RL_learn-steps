@@ -6,28 +6,58 @@
 import math
 from pathlib import Path
 import random
+import numpy as np
 import pygame
+from schemas import CartPoleConfig
+from physics import step_dynamics as physics_step, reward_and_done as physics_reward_done
+
+# 集成已训练模型
+try:
+    from core import LinearQNet
+    from schemas import AgentConfig, EnvState, Action
+except Exception:
+    LinearQNet = None  # 允许在未安装依赖时仍可手动游玩
+    AgentConfig = None
+    EnvState = None
+    Action = None
 
 # ========================
-# 物理参数（单位制：m, s, N）
+# 物理参数来源于训练配置（单位制：m, s, N）
 # ========================
-G = 9.8                 # 重力加速度
-M_CART = 1.0            # 小车质量
-M_POLE = 0.1            # 摆杆质量
-TOTAL_MASS = M_CART + M_POLE
-L = 0.5                 # 摆杆“半长”（从轴到杆端的距离，米）
-POLEMASS_LENGTH = M_POLE * L
+CFG = CartPoleConfig()
+G = CFG.gravity
+M_POLE = CFG.pole_mass
+TOTAL_MASS = CFG.total_mass
+L = CFG.pole_length                   # 半长
+POLEMASS_LENGTH = CFG.pole_mass_length
+FORCE_MAG = CFG.force_mag
+X_THRESHOLD = CFG.x_threshold
+THETA_THRESHOLD = CFG.theta_threshold_radians
 
-# 输入力大小（越大操控越“硬”，可自行微调）
-FORCE_MAG = 12.0
+# 渲染帧率与物理步长解耦：物理使用训练时的 dt
+FPS = 240
+DT = CFG.tau
 
-# 出界与失败判定阈值
-X_THRESHOLD = 2.4       # 小车位置阈值（米）
-THETA_THRESHOLD = math.radians(24)  # 摆角阈值（弧度），从竖直方向起算
+# ========================
+# AI 控制相关
+# ========================
+WEIGHTS_PATH = Path.cwd() / "assets" / "cartpole_model.npy"  # 训练后保存的权重文件: np.ndarray shape (n_actions, phi_dim)
+print(f"Weights path: {WEIGHTS_PATH}")
 
-# 数值积分步长（秒），与 FPS 同步更稳定
-FPS = 120
-DT = 1.0 / FPS
+def load_agent(weights_path: Path):
+    """从 .npy 权重文件加载 LinearQNet；若失败返回 None"""
+    if LinearQNet is None:
+        return None
+    if not weights_path.exists():
+        return None
+    try:
+        assert AgentConfig
+        agent = LinearQNet(seed=42, cfg=AgentConfig())
+        W = np.load(str(weights_path))
+        agent.W = W
+        return agent
+    except Exception:
+        return None
 
 # ========================
 # 画面与缩放
@@ -90,37 +120,8 @@ def draw_cart_pole(surf, x, theta):
     pygame.draw.circle(surf, BLACK, pivot, 6)
 
 def step_dynamics(state, force, dt):
-    """
-    经典 CartPole 连续动力学（无摩擦）：
-    state: (x, x_dot, theta, theta_dot)
-    force: 外力 N
-    返回下一个状态
-    """
-    x, x_dot, theta, theta_dot = state
-
-    # 来自 OpenAI Gym(CartPole) 的解析公式
-    # 参考：temp 与两个加速度
-    # 注意：theta 是相对竖直方向的角度
-    sin_t = math.sin(theta)
-    cos_t = math.cos(theta)
-
-    temp = (force + POLEMASS_LENGTH * theta_dot * theta_dot * sin_t) / TOTAL_MASS
-    theta_acc = (G * sin_t - cos_t * temp) / (L * (4.0/3.0 - (M_POLE * cos_t * cos_t) / TOTAL_MASS))
-    x_acc = temp - (POLEMASS_LENGTH * theta_acc * cos_t) / TOTAL_MASS
-
-    # 简单的轻微阻尼，提升可玩性（可注释掉）
-    cart_damping = 0.05
-    pole_damping = 0.002
-    x_acc -= cart_damping * x_dot
-    theta_acc -= pole_damping * theta_dot
-
-    # 欧拉积分
-    x += x_dot * dt
-    x_dot += x_acc * dt
-    theta += theta_dot * dt
-    theta_dot += theta_acc * dt
-
-    return (x, x_dot, theta, theta_dot)
+    # 委托到与训练一致的物理实现
+    return physics_step(state, force, CFG)
 
 def is_failed(state):
     x, _, theta, _ = state
@@ -151,11 +152,19 @@ def main():
     paused = False
     game_over = False
     time_alive = 0.0
+    steps_in_episode = 0
     best_time = 0.0
 
     # 输入状态（持续施力）
     force_left = False
     force_right = False
+
+    # AI 控制 + 在线训练
+    ai_enabled = False
+    train_enabled = False
+    agent = load_agent(WEIGHTS_PATH)
+    total_steps = 0  # 用于 epsilon 退火
+    last_save_feedback = ""
 
     while running:
         dt_ms = clock.tick(FPS)
@@ -174,10 +183,22 @@ def main():
                     state = reset_state()
                     game_over = False
                     time_alive = 0.0
+                    steps_in_episode = 0
+                    last_save_feedback = ""
                 elif event.key in (pygame.K_LEFT, pygame.K_a):
                     force_left = True
                 elif event.key in (pygame.K_RIGHT, pygame.K_d):
                     force_right = True
+                elif event.key == pygame.K_m:
+                    if agent is not None:
+                        ai_enabled = not ai_enabled
+                elif event.key == pygame.K_t:
+                    if agent is not None:
+                        train_enabled = not train_enabled
+                elif event.key == pygame.K_s:
+                    if agent is not None:
+                        np.save(str(WEIGHTS_PATH), agent.W)
+                        last_save_feedback = f"Saved weights -> {WEIGHTS_PATH.name}"
 
             elif event.type == pygame.KEYUP:
                 if event.key in (pygame.K_LEFT, pygame.K_a):
@@ -187,20 +208,48 @@ def main():
 
         screen.fill(WHITE)
 
-        # 物理更新
+        # 物理更新 + 在线训练
+        force = 0.0
+        epsilon = 0.0
         if not paused and not game_over:
-            force = 0.0
-            if force_left and not force_right:
-                force = -FORCE_MAG
-            elif force_right and not force_left:
-                force = FORCE_MAG
+            prev_state = state
+
+            last_action_result = None
+            if ai_enabled and (agent is not None) and (EnvState is not None):
+                x, x_dot, theta, theta_dot = state
+                env_state = EnvState(x=x, x_dot=x_dot, theta=theta, theta_dot=theta_dot)
+                feature = agent._state_to_feature(env_state)
+                if train_enabled:
+                    epsilon = agent.exponential_decay(total_steps)
+                action_result = agent.predict(feature, epsilon=epsilon)
+                last_action_result = action_result
+                act = action_result.best_action
+                assert Action
+                force = -FORCE_MAG if act == Action.LEFT else FORCE_MAG
+            else:
+                if force_left and not force_right:
+                    force = -FORCE_MAG
+                elif force_right and not force_left:
+                    force = FORCE_MAG
 
             state = step_dynamics(state, force, dt)
             time_alive += dt
+            steps_in_episode += 1
 
-            if is_failed(state):
+            # 与训练一致计算奖励，但游戏里不按 max_steps 截断
+            reward, done, terminated, truncated = physics_reward_done(state, steps_in_episode, CFG)
+            done = terminated
+
+            if ai_enabled and train_enabled and (agent is not None) and (EnvState is not None) and (last_action_result is not None):
+                s = EnvState(x=prev_state[0], x_dot=prev_state[1], theta=prev_state[2], theta_dot=prev_state[3])
+                s_next = EnvState(x=state[0], x_dot=state[1], theta=state[2], theta_dot=state[3])
+                agent.update_td0(s=s, a=last_action_result, r=reward, s_next=s_next, done=done)
+                total_steps += 1
+
+            if done:
                 game_over = True
                 best_time = max(best_time, time_alive)
+                steps_in_episode = 0
 
         # 绘制倒立摆
         x, x_dot, theta, theta_dot = state
@@ -211,8 +260,12 @@ def main():
             f"Time: {time_alive:6.2f}s   Best: {best_time:6.2f}s",
             f"x={x:+.2f} m   x_dot={x_dot:+.2f} m/s",
             f"theta={math.degrees(theta):+6.2f} deg   theta_dot={math.degrees(theta_dot):+6.2f} deg/s",
-            "Controls: ←/→ or A/D=施加推力,  P=暂停,  R=重置,  Esc=退出",
+            f"AI: {'ON' if ai_enabled else 'OFF'} | Train: {'ON' if train_enabled else 'OFF'} | Eps: {epsilon:0.3f}",
+            f"Weights: {'loaded' if agent is not None else 'no-weights'} | Save(S) | AI(M) | Train(T)",
+            "Controls: ←/→ or A/D=施加推力,  P=暂停,  R=重置,  M=AI,  T=训练,  S=保存,  Esc=退出",
         ]
+        if last_save_feedback:
+            info_lines.append(last_save_feedback)
         for i, line in enumerate(info_lines):
             text = font_small.render(line, True, BLACK)
             screen.blit(text, (16, 16 + i * 22))
