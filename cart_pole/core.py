@@ -10,8 +10,8 @@ class CartPole:
         self.np_rnd = np.random.RandomState(seed)
         self.cfg: CartPoleConfig = cfg
         
-        # 环境初始化时需要一起进行需要初始化的变量
-        self.env: EnvState = self._env_initialize()
+        # 当前环境状态
+        self.state: EnvState = self._env_initialize()
         self.steps: int = 0 # 当前世代步数
         
         # 环境初始化也不需要初始化的变量
@@ -19,13 +19,14 @@ class CartPole:
         
     def reset(self) -> EnvState:
         self.steps = 0
-        return self._env_initialize()
+        self.state = self._env_initialize()
+        return self.state.model_copy()
     
     def step(self, action: Action) -> Step:
-        x: float = self.env.x
-        x_dot: float = self.env.x_dot
-        theta: float = self.env.theta
-        theta_dot: float = self.env.theta_dot
+        x: float = self.state.x
+        x_dot: float = self.state.x_dot
+        theta: float = self.state.theta
+        theta_dot: float = self.state.theta_dot
         
         force: float = self.cfg.force_mag * action
         
@@ -43,7 +44,7 @@ class CartPole:
         x_dot = x_dot + self.cfg.tau * x_acc
         theta = theta + self.cfg.tau * theta_dot
         theta_dot = theta_dot + self.cfg.tau * theta_acc
-        
+        # 写回最新状态
         self.state = EnvState(x=x, x_dot=x_dot, theta=theta, theta_dot=theta_dot)
         self.steps += 1
         

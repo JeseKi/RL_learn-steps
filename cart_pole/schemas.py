@@ -1,5 +1,5 @@
 from typing import List
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, model_validator
 from enum import Enum
 
 class EnvState(BaseModel):
@@ -13,13 +13,18 @@ class CartPoleConfig(BaseModel):
     cart_mass: float = Field(default=1.0, description="小车质量")
     pole_mass: float = Field(default=0.1, description="杆子质量")
     total_mass: float = Field(default=1.1, description="总质量")
-    pole_length: float = Field(default=0.5, description="杆子长度的一半")
-    pole_mass_length: float = Field(default=0.05, description="杆子质量与长度的乘积")
-    force_mag: float = Field(default=1.0, description="作用在小车上的力的大小")
-    tau: float = Field(default=5 * 10e-2, description="采样频率，可以理解为帧率的倒数")
+    pole_length: float = Field(default=3, description="杆子长度的一半")
+    pole_mass_length: float = Field(default=0, description="杆子质量与长度的乘积")
+    force_mag: float = Field(default=10.0, description="作用在小车上的力的大小")
+    tau: float = Field(default=2 * 10e-4, description="采样频率，可以理解为帧率的倒数")
     theta_threshold_radians: float = Field(default=30 * 2 * 3.1415926 / 360, description="杆子最大倾角，超过就算失败")
     x_threshold: float = Field(default=5.0, description="小车最大移动距离，超过就算失败")
     max_steps: int = Field(default=500, description="每一世代的最大步数")
+    
+    @model_validator(mode='after')
+    def compute_pole_mass_length(self):
+        self.pole_mass_length = self.pole_mass * self.pole_length
+        return self
     
 class Step(BaseModel):
     state: EnvState
