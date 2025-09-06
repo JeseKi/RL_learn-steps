@@ -32,12 +32,14 @@ def train(
     _rewards: List[Rewards] = []
     for agent in agents:
         _round(agent=agent, steps=steps)
-        _rewards.append(agent.rewords)
+        _rewards.append(agent.rewards)
+        
+    avg = _calculate_averages(agents=agents)
 
     return (
         agents,
-        _average_rewards(rewards_list=_rewards),
-        _average_metrics_structured(agents=agents),
+        avg[0],
+        avg[1]
     )
 
 
@@ -46,8 +48,11 @@ def _round(agent: GreedyAgent, steps: int):
     for i in range(steps):
         action = agent.act(epsilon_state=agent.episode_state, epsilon=0.1)
         reward = agent._pull_machine(action)
-        agent.rewords.values[action] += reward
-        agent.rewords.counts[action] += 1
+        agent.rewards.values[action] += reward
+        agent.rewards.counts[action] += 1
+        agent.metrics_history.append(
+            (agent.rewards.model_copy(),agent.metric(), agent.steps)
+        )
 
         if agent.episode_state.epsilon <= 0.5 and not _printed[0]:
             # print(f"当前 epsilon 已经降到 0.5 了， 回合：{i}")
@@ -67,48 +72,51 @@ def _round(agent: GreedyAgent, steps: int):
     # print("-" * 50)
 
 
-def _average_rewards(rewards_list: List[Rewards]) -> Rewards:
-    if not rewards_list:
-        raise ValueError("不能传入一个空列表")
-
-    num_agents = len(rewards_list)
-    num_machines = len(rewards_list[0].values)
-
-    avg_values: List[float] = [
-        sum(r.values[i] for r in rewards_list) / num_agents for i in range(num_machines)
-    ]
-    avg_counts: List[float] = [
-        sum(r.counts[i] for r in rewards_list) / num_agents for i in range(num_machines)
-    ]
-
-    avg_reward = Rewards.__new__(Rewards)
-    avg_reward.values = avg_values
-    avg_reward.counts = avg_counts
-    return avg_reward
-
-
-def _average_metrics_structured(agents: List[GreedyAgent]) -> AverageMetrics:
-    """计算 agents 的平均指标并返回结构化结果
-
+def _calculate_averages(agents: List[GreedyAgent]) -> Tuple[Rewards, AverageMetrics]:
+    """计算平均指标
+    
     Args:
-        agents (List[GreedyAgent]): 训练后的 agents 列表
-
+        agents: 训练后的 agents 列表
+        
     Returns:
-        AverageMetrics: 平均指标结果
+        Tuple[Rewards, AverageMetrics]: 平均奖励和平均指标
     """
     if not agents:
-        return AverageMetrics(0.0, 0.0, 0.0, 0.0)
+        raise ValueError("agents 列表不能为空")
 
     num_agents = len(agents)
+    rewards_list = [agent.rewards for agent in agents]
+    num_machines = len(rewards_list[0].values)
 
-    avg_regret = sum(agent.regret() for agent in agents) / num_agents
-    avg_regret_rate = sum(agent.regret_rate() for agent in agents) / num_agents
-    avg_total_reward = sum(sum(agent.rewords.values) for agent in agents) / num_agents
-    avg_optimal_rate = sum(agent.optimal_rate() for agent in agents) / num_agents
+    # 计算平均奖励
+    avg_values = [
+        sum(values) / num_agents 
+        for values in zip(*(r.values for r in rewards_list))
+    ]
+    avg_counts = [
+        sum(counts) / num_agents 
+        for counts in zip(*(r.counts for r in rewards_list))
+    ]
+    avg_rewards = Rewards(values=avg_values, counts=avg_counts)
 
-    return AverageMetrics(
-        avg_regret=avg_regret,
-        avg_regret_rate=avg_regret_rate,
-        avg_total_reward=avg_total_reward,
-        avg_optimal_rate=avg_optimal_rate,
+    # 计算平均指标
+    total_regret = 0.0
+    total_regret_rate = 0.0
+    total_reward = 0.0
+    total_optimal_rate = 0.0
+
+    for agent in agents:
+        metrics = agent.metric()
+        total_regret += metrics.regret
+        total_regret_rate += metrics.regret_rate
+        total_reward += sum(metrics.rewards.values)
+        total_optimal_rate += metrics.optimal_rate
+
+    avg_metrics = AverageMetrics(
+        avg_regret=total_regret / num_agents,
+        avg_regret_rate=total_regret_rate / num_agents,
+        avg_total_reward=total_reward / num_agents,
+        avg_optimal_rate=total_optimal_rate / num_agents,
     )
+
+    return avg_rewards, avg_metrics

@@ -1,6 +1,10 @@
-from dataclasses import dataclass, field
-from typing import Callable, List
+from __future__ import annotations
+
+from dataclasses import dataclass
+from typing import Any, Callable, List, Tuple
 import random
+
+from pydantic import BaseModel, Field
 
 
 class SlotMachine:
@@ -51,22 +55,42 @@ class EpsilonDecreasingConfig:
     min_epsilon: float = 0.01
 
 
-@dataclass
-class Rewards:
+class Rewards(BaseModel):
     """贪婪 Agent 获得的奖励记录"""
 
-    values: List[float] = field(default_factory=list)  # 每个机器的累积奖励
-    counts: List[float] = field(default_factory=list)  # 每个机器的拉动次数
+    values: List[float] = Field(description="每个机器的累积奖励") 
+    counts: List[float] = Field(description="每个机器的拉动次数")
 
-    def __init__(self, env: RLEnv):
-        """根据传入的环境中的老虎机来初始化列表
-
-        Args:
-            env (RLEnv): 环境
+    @classmethod
+    def from_env(
+        cls, 
+        env: RLEnv, 
+        initial_value: float = 0.0, 
+        initial_count: float = 0.0
+    ) -> Rewards:
         """
-        self.values = [0] * len(env.machines)
-        self.counts = [0] * len(env.machines)
+        一个类方法，作为自定义的构造函数，用于从 RLEnv 环境初始化。
+        
+        Args:
+            env (RLEnv): 环境实例。
+            initial_value (float, optional): values 列表中每个元素的初始值，默认为 0.0。
+            initial_count (float, optional): counts 列表中每个元素的初始值，默认为 0.0。
 
+        Returns:
+            Rewards: 一个初始化好的 Rewards 实例。
+        """
+        num_machines = len(env.machines)
+        return cls(
+            values=[initial_value] * num_machines,
+            counts=[initial_count] * num_machines
+        )
+
+class Metrics(BaseModel):
+    regret: float = Field(..., description="后悔值")
+    regret_rate: float = Field(..., description="后悔率")
+    rewards: Rewards = Field(..., description="奖励")
+    optimal_rate: float = Field(..., description="最佳臂命中率")
+    
 
 class GreedyAgent:
     """我们的 Agent 默认使用贪婪算法，来找到最优的老虎机"""
@@ -92,24 +116,26 @@ class GreedyAgent:
         self.name = name
         self.seed = seed
         self.rng = random.Random(self.seed)
-        self.steps = 0
-        self.rewords = Rewards(env)
         self.greedy_algorithm = greedy_algorithm
-        self.env = env
         self.episode_state = EpsilonDecreasingState(
-            epsilon=epsilon_config.start_epsilon,
-            decay=epsilon_config.decay,
-            min_epsilon=epsilon_config.min_epsilon,
+                    epsilon=epsilon_config.start_epsilon,
+                    decay=epsilon_config.decay,
+                    min_epsilon=epsilon_config.min_epsilon,
         )
+        self.env = env
+        self.rewards: Rewards = Rewards.from_env(env)
+
+        self.steps: int = 0
+        self.metrics_history: List[Tuple[Rewards,Metrics, int]] = []
 
     def act(self, **kwargs) -> int:
         """选择拉动哪个老虎机，传入一个指定的贪婪算法，根据当前的奖励情况，选择一个老虎机"""
         self.steps += 1
-        return self.greedy_algorithm(self.rewords, self.rng, **kwargs)
+        return self.greedy_algorithm(self.rewards, self.rng, **kwargs)
 
     def regret(self):
         """计算后悔值"""
-        regret = self.env.best_reward(self.steps) - sum(self.rewords.values)
+        regret = self.env.best_reward(self.steps) - sum(self.rewards.values)
         return regret
 
     def regret_rate(self):
@@ -117,7 +143,15 @@ class GreedyAgent:
         return self.regret() / self.env.best_reward(self.steps)
 
     def optimal_rate(self):
-        return self.rewords.counts[-1] / self.steps if self.steps else 0
+        return self.rewards.counts[-1] / self.steps if self.steps else 0
+    
+    def metric(self):
+        return Metrics(
+            regret=self.regret(),
+            regret_rate=self.regret_rate(),
+            rewards=self.rewards.model_copy(deep=True),
+            optimal_rate=self.optimal_rate()
+        )
 
     def _pull_machine(self, machine_id: int) -> int:
         reward = self.env.pull(machine_id)

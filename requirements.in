@@ -10,3 +10,4 @@ pydantic
 uv
 ruff
 ty
+pydantic
