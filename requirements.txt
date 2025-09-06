@@ -118,6 +118,8 @@ python-dateutil==2.9.0.post0
     #   pandas
 pytz==2025.2
     # via pandas
+ruff==0.12.12
+    # via -r requirements.in
 setuptools==80.9.0
     # via
     #   pip-tools
@@ -141,6 +143,8 @@ torchvision==0.23.0
     # via -r requirements.in
 triton==3.4.0
     # via torch
+ty==0.0.1a20
+    # via -r requirements.in
 typing-extensions==4.15.0
     # via
     #   gymnasium
@@ -152,5 +156,7 @@ typing-inspection==0.4.1
     # via pydantic
 tzdata==2025.2
     # via pandas
+uv==0.8.15
+    # via -r requirements.in
 wheel==0.45.1
     # via pip-tools
