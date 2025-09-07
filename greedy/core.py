@@ -64,13 +64,17 @@ class Rewards(BaseModel):
         default=False,
         description="是否使用乐观初始化：True表示初始Q值为1，False表示初始Q值为0",
     )
+    optimistic_times: int = Field(
+        default=1,
+        description="乐观初始化的次数",
+    )
 
     @computed_field
     @property
     def q_values(self) -> List[float]:
         if self.optimistic_init:
             return [
-                value / count if count > 0 else 1.0
+                value / count if count > 0 else self.optimistic_times
                 for value, count in zip(self.values, self.counts)
             ]
         else:
@@ -86,6 +90,7 @@ class Rewards(BaseModel):
         initial_value: float = 0.0,
         initial_count: float = 0.0,
         optimistic_init: bool = False,
+        optimistic_times: int = 1,
     ) -> Rewards:
         """
         一个类方法，作为自定义的构造函数，用于从 RLEnv 环境初始化。
@@ -103,6 +108,7 @@ class Rewards(BaseModel):
             values=[initial_value] * num_machines,
             counts=[initial_count] * num_machines,
             optimistic_init=optimistic_init,
+            optimistic_times=optimistic_times,
         )
 
 
@@ -123,6 +129,7 @@ class GreedyAgent:
         greedy_algorithm: Callable[..., int],
         epsilon_config: EpsilonDecreasingConfig = EpsilonDecreasingConfig(),
         optimistic_init: bool = False,
+        optimistic_times: int = 1,
         seed: int = 42,
     ) -> None:
         """贪婪算法的 Agent
@@ -145,7 +152,11 @@ class GreedyAgent:
             min_epsilon=epsilon_config.min_epsilon,
         )
         self.env = env
-        self.rewards: Rewards = Rewards.from_env(env, optimistic_init=optimistic_init)
+        self.rewards: Rewards = Rewards.from_env(
+            env,
+            optimistic_init=optimistic_init,
+            optimistic_times=optimistic_times,
+        )
 
         self.steps: int = 0
         self.metrics_history: List[Tuple[Rewards, Metrics, int]] = []
