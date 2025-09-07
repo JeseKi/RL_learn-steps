@@ -33,14 +33,10 @@ def train(
     for agent in agents:
         _round(agent=agent, steps=steps)
         _rewards.append(agent.rewards)
-        
+
     avg = _calculate_averages(agents=agents)
 
-    return (
-        agents,
-        avg[0],
-        avg[1]
-    )
+    return (agents, avg[0], avg[1])
 
 
 def _round(agent: GreedyAgent, steps: int):
@@ -51,7 +47,7 @@ def _round(agent: GreedyAgent, steps: int):
         agent.rewards.values[action] += reward
         agent.rewards.counts[action] += 1
         agent.metrics_history.append(
-            (agent.rewards.model_copy(),agent.metric(), agent.steps)
+            (agent.rewards.model_copy(), agent.metric(), agent.steps)
         )
 
         if agent.episode_state.epsilon <= 0.5 and not _printed[0]:
@@ -74,10 +70,10 @@ def _round(agent: GreedyAgent, steps: int):
 
 def _calculate_averages(agents: List[GreedyAgent]) -> Tuple[Rewards, AverageMetrics]:
     """计算平均指标
-    
+
     Args:
         agents: 训练后的 agents 列表
-        
+
     Returns:
         Tuple[Rewards, AverageMetrics]: 平均奖励和平均指标
     """
@@ -86,16 +82,13 @@ def _calculate_averages(agents: List[GreedyAgent]) -> Tuple[Rewards, AverageMetr
 
     num_agents = len(agents)
     rewards_list = [agent.rewards for agent in agents]
-    num_machines = len(rewards_list[0].values)
 
     # 计算平均奖励
     avg_values = [
-        sum(values) / num_agents 
-        for values in zip(*(r.values for r in rewards_list))
+        sum(values) / num_agents for values in zip(*(r.values for r in rewards_list))
     ]
     avg_counts = [
-        sum(counts) / num_agents 
-        for counts in zip(*(r.counts for r in rewards_list))
+        sum(counts) / num_agents for counts in zip(*(r.counts for r in rewards_list))
     ]
     avg_rewards = Rewards(values=avg_values, counts=avg_counts)
 
