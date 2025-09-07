@@ -4,7 +4,7 @@ from dataclasses import dataclass
 from typing import Any, Callable, List, Tuple
 import random
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, computed_field
 
 
 class SlotMachine:
@@ -60,13 +60,32 @@ class Rewards(BaseModel):
 
     values: List[float] = Field(description="每个机器的累积奖励") 
     counts: List[float] = Field(description="每个机器的拉动次数")
+    optimistic_init: bool = Field(
+        default=False, 
+        description="是否使用乐观初始化：True表示初始Q值为1，False表示初始Q值为0"
+    )
+    
+    @computed_field
+    @property
+    def q_values(self) -> List[float]:
+        if self.optimistic_init:
+            return [
+            value / count if count > 0 else 1.0
+            for value, count in zip(self.values, self.counts)
+            ]
+        else: 
+            return [
+                value / count if count > 0 else 0.0
+                for value, count in zip(self.values, self.counts)
+            ]
 
     @classmethod
     def from_env(
         cls, 
         env: RLEnv, 
         initial_value: float = 0.0, 
-        initial_count: float = 0.0
+        initial_count: float = 0.0,
+        optimistic_init: bool = False
     ) -> Rewards:
         """
         一个类方法，作为自定义的构造函数，用于从 RLEnv 环境初始化。
@@ -82,7 +101,8 @@ class Rewards(BaseModel):
         num_machines = len(env.machines)
         return cls(
             values=[initial_value] * num_machines,
-            counts=[initial_count] * num_machines
+            counts=[initial_count] * num_machines,
+            optimistic_init=optimistic_init
         )
 
 class Metrics(BaseModel):
@@ -101,6 +121,7 @@ class GreedyAgent:
         env: RLEnv,
         greedy_algorithm: Callable[..., int],
         epsilon_config: EpsilonDecreasingConfig = EpsilonDecreasingConfig(),
+        optimistic_init: bool = False,
         seed: int = 42,
     ) -> None:
         """贪婪算法的 Agent
@@ -123,7 +144,7 @@ class GreedyAgent:
                     min_epsilon=epsilon_config.min_epsilon,
         )
         self.env = env
-        self.rewards: Rewards = Rewards.from_env(env)
+        self.rewards: Rewards = Rewards.from_env(env, optimistic_init=optimistic_init)
 
         self.steps: int = 0
         self.metrics_history: List[Tuple[Rewards,Metrics, int]] = []
