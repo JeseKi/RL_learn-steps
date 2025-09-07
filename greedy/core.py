@@ -3,8 +3,9 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Callable, List, Tuple
 import random
+import numpy as np
 
-from pydantic import BaseModel, Field, computed_field
+from pydantic import BaseModel, Field
 
 
 class SlotMachine:
@@ -68,20 +69,8 @@ class Rewards(BaseModel):
         default=1,
         description="乐观初始化的次数",
     )
-
-    @computed_field
-    @property
-    def q_values(self) -> List[float]:
-        if self.optimistic_init:
-            return [
-                value / count if count > 0 else self.optimistic_times
-                for value, count in zip(self.values, self.counts)
-            ]
-        else:
-            return [
-                value / count if count > 0 else 0.0
-                for value, count in zip(self.values, self.counts)
-            ]
+    q_values: List[float] = Field(default_factory=list, description="每个机器的Q值")
+    q_values_optimistic: List[float] = Field(default_factory=list, description="每个机器的乐观初始化Q值")
 
     @classmethod
     def from_env(
@@ -109,6 +98,8 @@ class Rewards(BaseModel):
             counts=[initial_count] * num_machines,
             optimistic_init=optimistic_init,
             optimistic_times=optimistic_times,
+            q_values=[initial_value] * num_machines,
+            q_values_optimistic=[optimistic_times] * num_machines,
         )
 
 
@@ -157,13 +148,24 @@ class GreedyAgent:
             optimistic_init=optimistic_init,
             optimistic_times=optimistic_times,
         )
-
+        self.optimistic_init = optimistic_init
+        
         self.steps: int = 0
         self.metrics_history: List[Tuple[Rewards, Metrics, int]] = []
+        self.optimistic_inited = False
 
     def act(self, **kwargs) -> int:
         """选择拉动哪个老虎机，传入一个指定的贪婪算法，根据当前的奖励情况，选择一个老虎机"""
         self.steps += 1
+        if self.optimistic_init and not self.optimistic_inited:
+            machine_id: int | None = None
+            for r in self.rewards.q_values_optimistic:
+                if r > 0:
+                    machine_id = self.rewards.q_values_optimistic.index(r)
+                    self.rewards.q_values_optimistic[machine_id] -= 1
+                    return machine_id
+            
+            self.optimistic_inited = True
         return self.greedy_algorithm(self.rewards, self.rng, **kwargs)
 
     def regret(self):
@@ -186,6 +188,17 @@ class GreedyAgent:
             optimal_rate=self.optimal_rate(),
         )
 
-    def _pull_machine(self, machine_id: int) -> int:
+    def pull_machine(self, machine_id: int) -> int:
         reward = self.env.pull(machine_id)
+        self._update_q_value(machine_id, reward)
         return reward
+    
+    def _update_q_value(self, machine_id: int, reward: int):
+        """使用增量方式更新 Q 值"""
+        self.rewards.counts[machine_id] += 1
+        count = self.rewards.counts[machine_id]
+        self.rewards.values[machine_id] += reward
+
+        # Q(A) ← Q(A) + (R - Q(A)) / N(A)
+        old_q = self.rewards.q_values[machine_id]
+        self.rewards.q_values[machine_id] = old_q + (reward - old_q) / count

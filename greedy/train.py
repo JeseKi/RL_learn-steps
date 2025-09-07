@@ -41,11 +41,9 @@ def train(
 
 def _round(agent: GreedyAgent, steps: int):
     _printed: List[bool] = [False, False]
-    for i in range(steps):
+    for _ in range(steps):
         action = agent.act(epsilon_state=agent.episode_state, epsilon=0.1)
-        reward = agent._pull_machine(action)
-        agent.rewards.values[action] += reward
-        agent.rewards.counts[action] += 1
+        _ = agent.pull_machine(action)
         agent.metrics_history.append(
             (agent.rewards.model_copy(), agent.metric(), agent.steps)
         )
