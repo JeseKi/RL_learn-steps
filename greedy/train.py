@@ -12,6 +12,8 @@ class AverageMetrics:
     avg_regret_rate: float
     avg_total_reward: float
     avg_optimal_rate: float
+    avg_convergence_steps: float
+    avg_convergence_rate: float
 
 
 def train(
@@ -95,6 +97,8 @@ def _calculate_averages(agents: List[GreedyAgent]) -> Tuple[Rewards, AverageMetr
     total_regret_rate = 0.0
     total_reward = 0.0
     total_optimal_rate = 0.0
+    total_convergence_steps = 0.0
+    total_convergence_rate = 0.0
 
     for agent in agents:
         metrics = agent.metric()
@@ -102,12 +106,17 @@ def _calculate_averages(agents: List[GreedyAgent]) -> Tuple[Rewards, AverageMetr
         total_regret_rate += metrics.regret_rate
         total_reward += sum(metrics.rewards.values)
         total_optimal_rate += metrics.optimal_rate
-
+        total_convergence_steps += agent.convergence_steps
+        if agent.convergence_steps > 0:
+            total_convergence_rate += 1
+        
     avg_metrics = AverageMetrics(
         avg_regret=total_regret / num_agents,
         avg_regret_rate=total_regret_rate / num_agents,
         avg_total_reward=total_reward / num_agents,
         avg_optimal_rate=total_optimal_rate / num_agents,
+        avg_convergence_steps=total_convergence_steps / num_agents,
+        avg_convergence_rate=total_convergence_rate / num_agents,
     )
 
     return avg_rewards, avg_metrics

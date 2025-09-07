@@ -121,6 +121,8 @@ class GreedyAgent:
         epsilon_config: EpsilonDecreasingConfig = EpsilonDecreasingConfig(),
         optimistic_init: bool = False,
         optimistic_times: int = 1,
+        convergence_threshold: float = 0.9,
+        convergence_min_steps: int = 100,
         seed: int = 42,
     ) -> None:
         """贪婪算法的 Agent
@@ -130,6 +132,10 @@ class GreedyAgent:
             env (RLEnv): 环境
             greedy_algorithm (Callable[..., int]): 所使用的贪婪算法
             epsilon_config (EpsilonDecreasingConfig, optional): 退火配置
+            optimistic_init (bool, optional): 是否使用乐观初始化
+            optimistic_times (int, optional): 乐观初始化的次数
+            convergence_threshold (float, optional): 达到收敛条件的阈值（最佳臂选择率）
+            convergence_min_steps (int, optional): 达到收敛条件的最小次数，至少要达到这个次数才能算作收敛
             seed (int, optional): 种子
         """
 
@@ -149,14 +155,18 @@ class GreedyAgent:
             optimistic_times=optimistic_times,
         )
         self.optimistic_init = optimistic_init
+        self.convergence_threshold = convergence_threshold # 达到收敛条件的阈值（最佳臂选择率）
+        self.convergence_min_steps = convergence_min_steps # 达到收敛条件的最小次数，至少要达到这个次数才能算作收敛
         
         self.steps: int = 0
         self.metrics_history: List[Tuple[Rewards, Metrics, int]] = []
         self.optimistic_inited = False
+        self.convergence_steps = 0 # 达到收敛时的步数
 
     def act(self, **kwargs) -> int:
         """选择拉动哪个老虎机，传入一个指定的贪婪算法，根据当前的奖励情况，选择一个老虎机"""
         self.steps += 1
+        
         if self.optimistic_init and not self.optimistic_inited:
             machine_id: int | None = None
             for r in self.rewards.q_values_optimistic:
@@ -191,6 +201,7 @@ class GreedyAgent:
     def pull_machine(self, machine_id: int) -> int:
         reward = self.env.pull(machine_id)
         self._update_q_value(machine_id, reward)
+        self._check_convergence()
         return reward
     
     def _update_q_value(self, machine_id: int, reward: int):
@@ -202,3 +213,13 @@ class GreedyAgent:
         # Q(A) ← Q(A) + (R - Q(A)) / N(A)
         old_q = self.rewards.q_values[machine_id]
         self.rewards.q_values[machine_id] = old_q + (reward - old_q) / count
+        
+    def _check_convergence(self):
+        if self.steps < self.convergence_min_steps or self.convergence_steps > 0:
+            return
+        
+        if self.optimal_rate() >= self.convergence_threshold:
+            self.convergence_steps = self.steps
+            print(f"达到收敛时的步数: {self.convergence_steps}")
+            return
+        return
