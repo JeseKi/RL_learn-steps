@@ -1,7 +1,8 @@
 from dataclasses import dataclass
 from typing import List, Tuple
 
-from core import GreedyAgent, RewardsState
+from core.agent import BaseAgent
+from core.schemas import RewardsState
 
 
 @dataclass
@@ -17,16 +18,16 @@ class AverageMetrics:
 
 
 def train(
-    agents: List[GreedyAgent], steps: int
-) -> Tuple[List[GreedyAgent], RewardsState, AverageMetrics]:
+    agents: List[BaseAgent], steps: int
+) -> Tuple[List[BaseAgent], RewardsState, AverageMetrics]:
     """按批量对 agents 进行训练，一般对这些 agents 设置不同的 seed
 
     Args:
-        agents (List[GreedyAgent]): 不同 seed 的 agents
+        agents (List[BaseAgent]): 不同 seed 的 agents
         steps (int): 每个 agents 的步数
 
     Returns:
-        Tuple[List[GreedyAgent], Rewards]: 返回训练后的 agents 和平均后的奖励
+        Tuple[List[BaseAgent], RewardsState, AverageMetrics]: 返回训练后的 agents 和平均后的奖励
     """
     if not agents or not steps:
         raise ValueError("agents 列表或 steps 必须有值")
@@ -41,41 +42,30 @@ def train(
     return (agents, avg[0], avg[1])
 
 
-def _round(agent: GreedyAgent, steps: int):
+def _round(agent: BaseAgent, steps: int):
     _printed: List[bool] = [False, False]
     for _ in range(steps):
-        action = agent.act(epsilon_state=agent.episode_state, epsilon=0.1, steps=agent.steps - 1)
+        action = agent.act(epsilon_state=getattr(agent, 'episode_state', None), epsilon=0.1)
         _ = agent.pull_machine(action)
         agent.metrics_history.append(
             (agent.rewards.model_copy(), agent.metric(), agent.steps - 1)
         )
 
-        if agent.episode_state.epsilon <= 0.5 and not _printed[0]:
-            # print(f"当前 epsilon 已经降到 0.5 了， 回合：{i}")
+        episode_state = getattr(agent, 'episode_state', None)
+        if episode_state and episode_state.epsilon <= 0.5 and not _printed[0]:
             _printed[0] = True
-        if (
-            agent.episode_state.epsilon <= agent.episode_state.min_epsilon
-            and not _printed[1]
-        ):
-            # print(f"当前 epsilon 已经降到 {agent.episode_state.min_epsilon} 了， 回合：{i}")
+        if episode_state and episode_state.epsilon <= getattr(episode_state, 'min_epsilon', 0.01) and not _printed[1]:
             _printed[1] = True
 
-    # total_rewords = sum(agent.rewords.values)
 
-    # print(f"Name: {agent.name} \nTotal rewards: {total_rewords} \nRewards per machine: {agent.rewords}")
-    # if agent.name == "epsilon_decreasing_greedy":
-    #     print(f"Final epsilon: {agent.episode_state.epsilon:.4f}")
-    # print("-" * 50)
-
-
-def _calculate_averages(agents: List[GreedyAgent]) -> Tuple[RewardsState, AverageMetrics]:
+def _calculate_averages(agents: List[BaseAgent]) -> Tuple[RewardsState, AverageMetrics]:
     """计算平均指标
 
     Args:
         agents: 训练后的 agents 列表
 
     Returns:
-        Tuple[Rewards, AverageMetrics]: 平均奖励和平均指标
+        Tuple[RewardsState, AverageMetrics]: 平均奖励和平均指标
     """
     if not agents:
         raise ValueError("agents 列表不能为空")
@@ -106,8 +96,9 @@ def _calculate_averages(agents: List[GreedyAgent]) -> Tuple[RewardsState, Averag
         total_regret_rate += metrics.regret_rate
         total_reward += sum(metrics.rewards.values)
         total_optimal_rate += metrics.optimal_rate
-        total_convergence_steps += agent.convergence_steps
-        if agent.convergence_steps > 0:
+        convergence_steps = getattr(agent, 'convergence_steps', 0)
+        total_convergence_steps += convergence_steps
+        if convergence_steps > 0:
             total_convergence_rate += 1
         
     avg_metrics = AverageMetrics(

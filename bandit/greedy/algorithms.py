@@ -1,8 +1,18 @@
-import random
-import math
+"""贪婪算法模块：实现各种贪婪算法
 
-from greedy import EpsilonDecreasingState
-from core import RewardsState
+公开接口：
+- greedy_normal: 普通贪婪算法（基于累计奖励）
+- epsilon_greedy: ε-贪婪算法（基于累计奖励）
+- epsilon_decreasing_greedy: ε-递减贪婪算法（基于累计奖励）
+- greedy_average: 普通贪婪算法（基于平均奖励）
+- epsilon_average: ε-贪婪算法（基于平均奖励）
+- epsilon_decreasing_average: ε-递减贪婪算法（基于平均奖励）
+"""
+
+import random
+
+from core.schemas import RewardsState
+from .config import EpsilonDecreasingState
 
 
 # 当前奖励：最高回报的奖励（累计奖励）
@@ -65,13 +75,3 @@ def epsilon_decreasing_average(
         epsilon_state.min_epsilon, epsilon_state.epsilon * epsilon_state.decay
     )
     return action
-
-
-# UCB1 系算法
-def ucb1(rewards: RewardsState, _: random.Random, steps: int, **__) -> int:
-    """UCB1 算法：基于置信区间的上界选择最优的老虎机"""
-    for i in range(len(rewards.values)): # 更新所有机器的UCB值
-        if not rewards.ucb_states.ucb_inited:
-            return rewards.ucb_states.ucb_inited_index
-        rewards.ucb_values[i] = rewards.q_values[i] + math.sqrt(2 * math.log(steps) / rewards.counts[i])
-    return rewards.ucb_values.index(max(rewards.ucb_values))

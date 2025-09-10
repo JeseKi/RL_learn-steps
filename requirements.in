@@ -11,3 +11,4 @@ uv
 ruff
 ty
 mypy
+pytest
