@@ -10,4 +10,4 @@ pydantic
 uv
 ruff
 ty
-pydantic
+mypy

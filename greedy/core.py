@@ -3,7 +3,6 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Callable, List, Tuple
 import random
-import numpy as np
 
 from pydantic import BaseModel, Field
 
