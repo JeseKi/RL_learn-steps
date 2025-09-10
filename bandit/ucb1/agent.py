@@ -34,7 +34,7 @@ class UCB1Agent(BaseAgent):
             seed (int, optional): 随机种子
         """
         super().__init__(name=name, env=env, seed=seed)
-        
+
         self.rewards: RewardsState = RewardsState.from_env(env)
         self.convergence_threshold = convergence_threshold
         self.convergence_min_steps = convergence_min_steps
@@ -66,7 +66,7 @@ class UCB1Agent(BaseAgent):
         """检查是否达到收敛条件"""
         if self.steps < self.convergence_min_steps or self.convergence_steps > 0:
             return
-        
+
         if self.optimal_rate() >= self.convergence_threshold:
             self.convergence_steps = self.steps
             print(f"达到收敛时的步数: {self.convergence_steps}")

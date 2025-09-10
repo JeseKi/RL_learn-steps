@@ -4,4 +4,11 @@ from .environment import SlotMachine, RLEnv
 from .schemas import RewardsState, Metrics, UCBInitState
 from .agent import BaseAgent
 
-__all__ = ["SlotMachine", "RLEnv", "RewardsState", "Metrics", "UCBInitState", "BaseAgent"]
+__all__ = [
+    "SlotMachine",
+    "RLEnv",
+    "RewardsState",
+    "Metrics",
+    "UCBInitState",
+    "BaseAgent",
+]

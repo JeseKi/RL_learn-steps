@@ -45,16 +45,22 @@ def train(
 def _round(agent: BaseAgent, steps: int):
     _printed: List[bool] = [False, False]
     for _ in range(steps):
-        action = agent.act(epsilon_state=getattr(agent, 'episode_state', None), epsilon=0.1)
+        action = agent.act(
+            epsilon_state=getattr(agent, "episode_state", None), epsilon=0.1
+        )
         _ = agent.pull_machine(action)
         agent.metrics_history.append(
             (agent.rewards.model_copy(), agent.metric(), agent.steps - 1)
         )
 
-        episode_state = getattr(agent, 'episode_state', None)
+        episode_state = getattr(agent, "episode_state", None)
         if episode_state and episode_state.epsilon <= 0.5 and not _printed[0]:
             _printed[0] = True
-        if episode_state and episode_state.epsilon <= getattr(episode_state, 'min_epsilon', 0.01) and not _printed[1]:
+        if (
+            episode_state
+            and episode_state.epsilon <= getattr(episode_state, "min_epsilon", 0.01)
+            and not _printed[1]
+        ):
             _printed[1] = True
 
 
@@ -96,11 +102,11 @@ def _calculate_averages(agents: List[BaseAgent]) -> Tuple[RewardsState, AverageM
         total_regret_rate += metrics.regret_rate
         total_reward += sum(metrics.rewards.values)
         total_optimal_rate += metrics.optimal_rate
-        convergence_steps = getattr(agent, 'convergence_steps', 0)
+        convergence_steps = getattr(agent, "convergence_steps", 0)
         total_convergence_steps += convergence_steps
         if convergence_steps > 0:
             total_convergence_rate += 1
-        
+
     avg_metrics = AverageMetrics(
         avg_regret=total_regret / num_agents,
         avg_regret_rate=total_regret_rate / num_agents,

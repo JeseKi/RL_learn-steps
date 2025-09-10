@@ -33,11 +33,13 @@ class RewardsState(BaseModel):
         description="乐观初始化的次数",
     )
     q_values: List[float] = Field(default_factory=list, description="每个机器的Q值")
-    q_values_optimistic: List[float] = Field(default_factory=list, description="每个机器的乐观初始化Q值")
+    q_values_optimistic: List[float] = Field(
+        default_factory=list, description="每个机器的乐观初始化Q值"
+    )
     ucb_values: List[float] = Field(default_factory=list, description="每个机器的UCB值")
-    
+
     _ucb_states: UCBInitState = UCBInitState()
-    
+
     @property
     def ucb_states(self) -> UCBInitState:
         if not self._ucb_states.ucb_inited:

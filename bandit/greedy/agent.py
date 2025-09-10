@@ -43,7 +43,7 @@ class GreedyAgent(BaseAgent):
             seed (int, optional): 种子
         """
         super().__init__(name=name, env=env, seed=seed)
-        
+
         self.greedy_algorithm = greedy_algorithm
         self.episode_state = EpsilonDecreasingState(
             epsilon=epsilon_config.start_epsilon,
@@ -70,7 +70,7 @@ class GreedyAgent(BaseAgent):
                     machine_id = self.rewards.q_values_optimistic.index(r)
                     self.rewards.q_values_optimistic[machine_id] -= 1
                     return machine_id
-            
+
             self.optimistic_inited = True
         return self.greedy_algorithm(self.rewards, self.rng, **kwargs)
 
@@ -95,7 +95,7 @@ class GreedyAgent(BaseAgent):
         """检查是否达到收敛条件"""
         if self.steps < self.convergence_min_steps or self.convergence_steps > 0:
             return
-        
+
         if self.optimal_rate() >= self.convergence_threshold:
             self.convergence_steps = self.steps
             print(f"达到收敛时的步数: {self.convergence_steps}")
