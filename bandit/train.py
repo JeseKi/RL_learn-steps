@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 from typing import List, Tuple
 
-from core import GreedyAgent, Rewards
+from core import GreedyAgent, RewardsState
 
 
 @dataclass
@@ -18,7 +18,7 @@ class AverageMetrics:
 
 def train(
     agents: List[GreedyAgent], steps: int
-) -> Tuple[List[GreedyAgent], Rewards, AverageMetrics]:
+) -> Tuple[List[GreedyAgent], RewardsState, AverageMetrics]:
     """按批量对 agents 进行训练，一般对这些 agents 设置不同的 seed
 
     Args:
@@ -31,7 +31,7 @@ def train(
     if not agents or not steps:
         raise ValueError("agents 列表或 steps 必须有值")
 
-    _rewards: List[Rewards] = []
+    _rewards: List[RewardsState] = []
     for agent in agents:
         _round(agent=agent, steps=steps)
         _rewards.append(agent.rewards)
@@ -44,10 +44,10 @@ def train(
 def _round(agent: GreedyAgent, steps: int):
     _printed: List[bool] = [False, False]
     for _ in range(steps):
-        action = agent.act(epsilon_state=agent.episode_state, epsilon=0.1)
+        action = agent.act(epsilon_state=agent.episode_state, epsilon=0.1, steps=agent.steps - 1)
         _ = agent.pull_machine(action)
         agent.metrics_history.append(
-            (agent.rewards.model_copy(), agent.metric(), agent.steps)
+            (agent.rewards.model_copy(), agent.metric(), agent.steps - 1)
         )
 
         if agent.episode_state.epsilon <= 0.5 and not _printed[0]:
@@ -68,7 +68,7 @@ def _round(agent: GreedyAgent, steps: int):
     # print("-" * 50)
 
 
-def _calculate_averages(agents: List[GreedyAgent]) -> Tuple[Rewards, AverageMetrics]:
+def _calculate_averages(agents: List[GreedyAgent]) -> Tuple[RewardsState, AverageMetrics]:
     """计算平均指标
 
     Args:
@@ -90,7 +90,7 @@ def _calculate_averages(agents: List[GreedyAgent]) -> Tuple[Rewards, AverageMetr
     avg_counts = [
         sum(counts) / num_agents for counts in zip(*(r.counts for r in rewards_list))
     ]
-    avg_rewards = Rewards(values=avg_values, counts=avg_counts)
+    avg_rewards = RewardsState(values=avg_values, counts=avg_counts)
 
     # 计算平均指标
     total_regret = 0.0

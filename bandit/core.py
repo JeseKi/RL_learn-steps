@@ -54,8 +54,12 @@ class EpsilonDecreasingConfig:
     decay: float = 0.995
     min_epsilon: float = 0.01
 
+@dataclass
+class UCBInitState:
+    ucb_inited: bool = False
+    ucb_inited_index: int = 0
 
-class Rewards(BaseModel):
+class RewardsState(BaseModel):
     """贪婪 Agent 获得的奖励记录"""
 
     values: List[float] = Field(description="每个机器的累积奖励")
@@ -70,23 +74,35 @@ class Rewards(BaseModel):
     )
     q_values: List[float] = Field(default_factory=list, description="每个机器的Q值")
     q_values_optimistic: List[float] = Field(default_factory=list, description="每个机器的乐观初始化Q值")
+    ucb_values: List[float] = Field(default_factory=list, description="每个机器的UCB值")
+    
+    _ucb_states: UCBInitState = UCBInitState()
+    @property
+    def ucb_states(self) -> UCBInitState:
+        if not self._ucb_states.ucb_inited:
+            for i in range(len(self.counts)):
+                if self.counts[i] == 0:
+                    self._ucb_states.ucb_inited_index = i
+                    return self._ucb_states
+            self._ucb_states = UCBInitState(ucb_inited=True)
+        return self._ucb_states
 
     @classmethod
     def from_env(
         cls,
         env: RLEnv,
         initial_value: float = 0.0,
-        initial_count: float = 0.0,
+        initial_count: int = 0,
         optimistic_init: bool = False,
         optimistic_times: int = 1,
-    ) -> Rewards:
+    ) -> RewardsState:
         """
         一个类方法，作为自定义的构造函数，用于从 RLEnv 环境初始化。
 
         Args:
             env (RLEnv): 环境实例。
             initial_value (float, optional): values 列表中每个元素的初始值，默认为 0.0。
-            initial_count (float, optional): counts 列表中每个元素的初始值，默认为 0.0。
+            initial_count (int, optional): counts 列表中每个元素的初始值，默认为 0。
 
         Returns:
             Rewards: 一个初始化好的 Rewards 实例。
@@ -99,13 +115,14 @@ class Rewards(BaseModel):
             optimistic_times=optimistic_times,
             q_values=[initial_value] * num_machines,
             q_values_optimistic=[optimistic_times] * num_machines,
+            ucb_values=[0] * num_machines,
         )
 
 
 class Metrics(BaseModel):
     regret: float = Field(..., description="后悔值")
     regret_rate: float = Field(..., description="后悔率")
-    rewards: Rewards = Field(..., description="奖励")
+    rewards: RewardsState = Field(..., description="奖励")
     optimal_rate: float = Field(..., description="最佳臂命中率")
 
 
@@ -148,7 +165,7 @@ class GreedyAgent:
             min_epsilon=epsilon_config.min_epsilon,
         )
         self.env = env
-        self.rewards: Rewards = Rewards.from_env(
+        self.rewards: RewardsState = RewardsState.from_env(
             env,
             optimistic_init=optimistic_init,
             optimistic_times=optimistic_times,
@@ -158,7 +175,7 @@ class GreedyAgent:
         self.convergence_min_steps = convergence_min_steps # 达到收敛条件的最小次数，至少要达到这个次数才能算作收敛
         
         self.steps: int = 0
-        self.metrics_history: List[Tuple[Rewards, Metrics, int]] = []
+        self.metrics_history: List[Tuple[RewardsState, Metrics, int]] = []
         self.optimistic_inited = False
         self.convergence_steps = 0 # 达到收敛时的步数
 

@@ -1,16 +1,17 @@
 import random
+import math
 
-from core import EpsilonDecreasingState, Rewards
+from core import EpsilonDecreasingState, RewardsState
 
 
 # 当前奖励：最高回报的奖励（累计奖励）
-def greedy_normal(rewards: Rewards, _rng=None, **_) -> int:
+def greedy_normal(rewards: RewardsState, _rng=None, **_) -> int:
     """普通贪婪算法：选择当前累计奖励最高的老虎机"""
     return rewards.values.index(max(rewards.values))
 
 
 def epsilon_greedy(
-    rewards: Rewards, rng: random.Random, epsilon: float = 0.1, **_
+    rewards: RewardsState, rng: random.Random, epsilon: float = 0.1, **_
 ) -> int:
     """ε-贪婪算法：以 ε 的概率随机选择，否则选累计奖励最高的"""
     if rng.random() < epsilon:
@@ -20,7 +21,7 @@ def epsilon_greedy(
 
 
 def epsilon_decreasing_greedy(
-    rewards: Rewards, rng: random.Random, epsilon_state: EpsilonDecreasingState, **_
+    rewards: RewardsState, rng: random.Random, epsilon_state: EpsilonDecreasingState, **_
 ) -> int:
     """ε-递减贪婪算法：ε 随时间递减，其余时间选累计奖励最高的"""
     if rng.random() < epsilon_state.epsilon:
@@ -35,13 +36,13 @@ def epsilon_decreasing_greedy(
 
 
 # 当前奖励：最高平均回报奖励
-def greedy_average(rewards: Rewards, _rng=None, **_) -> int:
+def greedy_average(rewards: RewardsState, _rng=None, **_) -> int:
     """普通贪婪算法：选择当前 Q 值最高的老虎机"""
     return rewards.q_values.index(max(rewards.q_values))
 
 
 def epsilon_average(
-    rewards: Rewards, rng: random.Random, epsilon: float = 0.1, **_
+    rewards: RewardsState, rng: random.Random, epsilon: float = 0.1, **_
 ) -> int:
     """ε-贪婪算法：基于 Q 值进行探索与利用"""
     if rng.random() < epsilon:
@@ -51,7 +52,7 @@ def epsilon_average(
 
 
 def epsilon_decreasing_average(
-    rewards: Rewards, rng: random.Random, epsilon_state: EpsilonDecreasingState, **_
+    rewards: RewardsState, rng: random.Random, epsilon_state: EpsilonDecreasingState, **_
 ) -> int:
     """ε-递减贪婪算法：基于 Q 值，ε 随时间递减"""
     if rng.random() < epsilon_state.epsilon:
@@ -63,3 +64,12 @@ def epsilon_decreasing_average(
         epsilon_state.min_epsilon, epsilon_state.epsilon * epsilon_state.decay
     )
     return action
+
+# UCB1 系算法
+def ucb1(rewards: RewardsState, _: random.Random, steps: int, **__) -> int:
+    """UCB1 算法：基于置信区间的上界选择最优的老虎机"""
+    for i in range(len(rewards.values)): # 更新所有机器的UCB值
+        if not rewards.ucb_states.ucb_inited:
+            return rewards.ucb_states.ucb_inited_index
+        rewards.ucb_values[i] = rewards.q_values[i] + math.sqrt(2 * math.log(steps) / rewards.counts[i])
+    return rewards.ucb_values.index(max(rewards.ucb_values))
