@@ -6,11 +6,12 @@
 
 from __future__ import annotations
 
-from typing import Callable
+from typing import Callable, cast
 
 from core.agent import BaseAgent
 from core.environment import RLEnv
-from core.schemas import RewardsState, Metrics
+from core.schemas import Metrics
+from .schemas import GreedyRewardsState
 from .config import EpsilonDecreasingConfig, EpsilonDecreasingState
 
 
@@ -50,7 +51,7 @@ class GreedyAgent(BaseAgent):
             decay=epsilon_config.decay,
             min_epsilon=epsilon_config.min_epsilon,
         )
-        self.rewards: RewardsState = RewardsState.from_env(
+        self.rewards = GreedyRewardsState.from_env(
             env,
             optimistic_init=optimistic_init,
             optimistic_times=optimistic_times,
@@ -63,16 +64,17 @@ class GreedyAgent(BaseAgent):
 
     def act(self, **kwargs) -> int:
         """选择行动（拉动哪个老虎机）"""
+        greedy_rewards = cast(GreedyRewardsState, self.rewards)
         if self.optimistic_init and not self.optimistic_inited:
             machine_id: int | None = None
-            for r in self.rewards.q_values_optimistic:
+            for r in greedy_rewards.q_values_optimistic:
                 if r > 0:
-                    machine_id = self.rewards.q_values_optimistic.index(r)
-                    self.rewards.q_values_optimistic[machine_id] -= 1
+                    machine_id = greedy_rewards.q_values_optimistic.index(r)
+                    greedy_rewards.q_values_optimistic[machine_id] -= 1
                     return machine_id
 
             self.optimistic_inited = True
-        return self.greedy_algorithm(self.rewards, self.rng, **kwargs)
+        return self.greedy_algorithm(greedy_rewards, self.rng, **kwargs)
 
     def pull_machine(self, machine_id: int) -> int:
         """拉动指定机器并更新状态"""
@@ -83,13 +85,14 @@ class GreedyAgent(BaseAgent):
 
     def _update_q_value(self, machine_id: int, reward: int):
         """使用增量方式更新 Q 值"""
-        self.rewards.counts[machine_id] += 1
-        count = self.rewards.counts[machine_id]
-        self.rewards.values[machine_id] += reward
+        greedy_rewards = cast(GreedyRewardsState, self.rewards)
+        greedy_rewards.counts[machine_id] += 1
+        count = greedy_rewards.counts[machine_id]
+        greedy_rewards.values[machine_id] += reward
 
         # Q(A) ← Q(A) + (R - Q(A)) / N(A)
-        old_q = self.rewards.q_values[machine_id]
-        self.rewards.q_values[machine_id] = old_q + (reward - old_q) / count
+        old_q = greedy_rewards.q_values[machine_id]
+        greedy_rewards.q_values[machine_id] = old_q + (reward - old_q) / count
 
     def _check_convergence(self):
         """检查是否达到收敛条件"""

@@ -11,18 +11,18 @@
 
 import random
 
-from core.schemas import RewardsState
+from .schemas import GreedyRewardsState
 from .config import EpsilonDecreasingState
 
 
 # 当前奖励：最高回报的奖励（累计奖励）
-def greedy_normal(rewards: RewardsState, _rng=None, **_) -> int:
+def greedy_normal(rewards: GreedyRewardsState, _rng=None, **_) -> int:
     """普通贪婪算法：选择当前累计奖励最高的老虎机"""
     return rewards.values.index(max(rewards.values))
 
 
 def epsilon_greedy(
-    rewards: RewardsState, rng: random.Random, epsilon: float = 0.1, **_
+    rewards: GreedyRewardsState, rng: random.Random, epsilon: float = 0.1, **_
 ) -> int:
     """ε-贪婪算法：以 ε 的概率随机选择，否则选累计奖励最高的"""
     if rng.random() < epsilon:
@@ -32,7 +32,7 @@ def epsilon_greedy(
 
 
 def epsilon_decreasing_greedy(
-    rewards: RewardsState,
+    rewards: GreedyRewardsState,
     rng: random.Random,
     epsilon_state: EpsilonDecreasingState,
     **_,
@@ -50,13 +50,13 @@ def epsilon_decreasing_greedy(
 
 
 # 当前奖励：最高平均回报奖励
-def greedy_average(rewards: RewardsState, _rng=None, **_) -> int:
+def greedy_average(rewards: GreedyRewardsState, _rng=None, **_) -> int:
     """普通贪婪算法：选择当前 Q 值最高的老虎机"""
     return rewards.q_values.index(max(rewards.q_values))
 
 
 def epsilon_average(
-    rewards: RewardsState, rng: random.Random, epsilon: float = 0.1, **_
+    rewards: GreedyRewardsState, rng: random.Random, epsilon: float = 0.1, **_
 ) -> int:
     """ε-贪婪算法：基于 Q 值进行探索与利用"""
     if rng.random() < epsilon:
@@ -66,7 +66,7 @@ def epsilon_average(
 
 
 def epsilon_decreasing_average(
-    rewards: RewardsState,
+    rewards: GreedyRewardsState,
     rng: random.Random,
     epsilon_state: EpsilonDecreasingState,
     **_,

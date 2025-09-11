@@ -7,7 +7,7 @@
 from typing import Callable, List, Tuple, Optional
 import gc
 
-from core import RewardsState, RLEnv
+from core import BaseRewardsState, RLEnv
 from core.agent import BaseAgent
 from greedy import (
     EpsilonDecreasingConfig,
@@ -41,7 +41,7 @@ def batch_train(
     convergence_min_steps: int = CONVERGENCE_MIN_STEPS,
     seed: int = SEED,
     **kwargs,
-) -> Tuple[List[BaseAgent], RewardsState, AverageMetrics]:
+) -> Tuple[List[BaseAgent], BaseRewardsState, AverageMetrics]:
     """批训练 Agent，传入数量，代理工厂函数，环境，步数和初始种子即可训练
 
     Args:
@@ -56,7 +56,7 @@ def batch_train(
         **kwargs: 传递给代理工厂函数的额外参数
 
     Returns:
-        Tuple[List[BaseAgent], RewardsState, AverageMetrics]: 训练结果
+        Tuple[List[BaseAgent], BaseRewardsState, AverageMetrics]: 训练结果
     """
     _agents: List[BaseAgent] = []
 

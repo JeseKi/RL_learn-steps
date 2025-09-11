@@ -2,7 +2,7 @@ from dataclasses import dataclass
 from typing import List, Tuple
 
 from core.agent import BaseAgent
-from core.schemas import RewardsState
+from core.schemas import BaseRewardsState
 
 
 @dataclass
@@ -19,7 +19,7 @@ class AverageMetrics:
 
 def train(
     agents: List[BaseAgent], steps: int
-) -> Tuple[List[BaseAgent], RewardsState, AverageMetrics]:
+) -> Tuple[List[BaseAgent], BaseRewardsState, AverageMetrics]:
     """按批量对 agents 进行训练，一般对这些 agents 设置不同的 seed
 
     Args:
@@ -27,12 +27,12 @@ def train(
         steps (int): 每个 agents 的步数
 
     Returns:
-        Tuple[List[BaseAgent], RewardsState, AverageMetrics]: 返回训练后的 agents 和平均后的奖励
+        Tuple[List[BaseAgent], BaseRewardsState, AverageMetrics]: 返回训练后的 agents 和平均后的奖励
     """
     if not agents or not steps:
         raise ValueError("agents 列表或 steps 必须有值")
 
-    _rewards: List[RewardsState] = []
+    _rewards: List[BaseRewardsState] = []
     for agent in agents:
         _round(agent=agent, steps=steps)
         _rewards.append(agent.rewards)
@@ -64,14 +64,14 @@ def _round(agent: BaseAgent, steps: int):
             _printed[1] = True
 
 
-def _calculate_averages(agents: List[BaseAgent]) -> Tuple[RewardsState, AverageMetrics]:
+def _calculate_averages(agents: List[BaseAgent]) -> Tuple[BaseRewardsState, AverageMetrics]:
     """计算平均指标
 
     Args:
         agents: 训练后的 agents 列表
 
     Returns:
-        Tuple[RewardsState, AverageMetrics]: 平均奖励和平均指标
+        Tuple[BaseRewardsState, AverageMetrics]: 平均奖励和平均指标
     """
     if not agents:
         raise ValueError("agents 列表不能为空")
@@ -86,7 +86,7 @@ def _calculate_averages(agents: List[BaseAgent]) -> Tuple[RewardsState, AverageM
     avg_counts = [
         sum(counts) / num_agents for counts in zip(*(r.counts for r in rewards_list))
     ]
-    avg_rewards = RewardsState(values=avg_values, counts=avg_counts)
+    avg_rewards = BaseRewardsState(values=avg_values, counts=avg_counts)
 
     # 计算平均指标
     total_regret = 0.0

@@ -9,7 +9,7 @@ from typing import List, Tuple
 import random
 
 from .environment import RLEnv
-from .schemas import RewardsState, Metrics
+from .schemas import BaseRewardsState, Metrics
 
 
 class BaseAgent(ABC):
@@ -33,8 +33,8 @@ class BaseAgent(ABC):
         self.rng = random.Random(self.seed)
         self.env = env
         self.steps: int = 0
-        self.metrics_history: List[Tuple[RewardsState, Metrics, int]] = []
-        self.rewards: RewardsState = RewardsState.from_env(env)
+        self.metrics_history: List[Tuple[BaseRewardsState, Metrics, int]] = []
+        self.rewards: BaseRewardsState = BaseRewardsState.from_env(env)
 
     @abstractmethod
     def act(self, **kwargs) -> int:

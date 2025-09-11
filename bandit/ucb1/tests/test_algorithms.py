@@ -6,7 +6,7 @@
 import pytest
 import random
 from core.environment import RLEnv
-from core.schemas import RewardsState
+from ucb1.schemas import UCB1RewardsState
 from ucb1.algorithms import ucb1
 
 
@@ -19,7 +19,7 @@ def simple_env():
 @pytest.fixture
 def rewards_state(simple_env):
     """创建初始 RewardsState"""
-    return RewardsState.from_env(simple_env)
+    return UCB1RewardsState.from_env(simple_env)
 
 
 @pytest.fixture
@@ -46,7 +46,7 @@ def test_ucb1_initialization(rewards_state, rng):
 
 def test_ucb1_after_all_initialized(simple_env, rng):
     """测试所有臂初始化后，使用 UCB 选择"""
-    rewards = RewardsState.from_env(simple_env)
+    rewards = UCB1RewardsState.from_env(simple_env)
     # 模拟初始化：每个臂拉动一次
     rewards.counts = [1, 1]
     rewards.values = [1.0, 0.5]  # arm 0 奖励高
@@ -70,7 +70,7 @@ def test_ucb1_boundary_steps_zero(rewards_state, rng):
 
 def test_ucb1_all_counts_positive_low_steps(simple_env, rng):
     """边界测试：所有 counts>0，但 steps 小，验证不报错"""
-    rewards = RewardsState.from_env(simple_env)
+    rewards = UCB1RewardsState.from_env(simple_env)
     rewards.counts = [1, 1]
     rewards.values = [0.5, 0.5]
     rewards.q_values = [0.5, 0.5]
@@ -82,7 +82,7 @@ def test_ucb1_all_counts_positive_low_steps(simple_env, rng):
 
 def test_ucb1_error_path_division_avoided(simple_env, rng):
     """错误路径测试：确保不会除零（由初始化逻辑避免）"""
-    rewards = RewardsState.from_env(simple_env)
+    rewards = UCB1RewardsState.from_env(simple_env)
     # 故意设置一个 counts=0，但不应该进入 UCB 计算
     rewards.counts[1] = 0
     rewards.counts[0] = 1

@@ -6,10 +6,12 @@
 
 from __future__ import annotations
 
+from typing import cast
 
 from core.agent import BaseAgent
 from core.environment import RLEnv
-from core.schemas import RewardsState, Metrics
+from core.schemas import Metrics
+from .schemas import UCB1RewardsState
 from .algorithms import ucb1
 
 
@@ -35,7 +37,7 @@ class UCB1Agent(BaseAgent):
         """
         super().__init__(name=name, env=env, seed=seed)
 
-        self.rewards: RewardsState = RewardsState.from_env(env)
+        self.rewards = UCB1RewardsState.from_env(env)
         self.convergence_threshold = convergence_threshold
         self.convergence_min_steps = convergence_min_steps
         self.convergence_steps = 0
@@ -43,7 +45,7 @@ class UCB1Agent(BaseAgent):
     def act(self, **kwargs) -> int:
         """选择行动（拉动哪个老虎机）"""
         self.steps += 1
-        return ucb1(self.rewards, self.rng, self.steps)
+        return ucb1(cast(UCB1RewardsState, self.rewards), self.rng, self.steps)
 
     def pull_machine(self, machine_id: int) -> int:
         """拉动指定机器并更新状态"""
@@ -54,13 +56,14 @@ class UCB1Agent(BaseAgent):
 
     def _update_q_value(self, machine_id: int, reward: int):
         """使用增量方式更新 Q 值"""
-        self.rewards.counts[machine_id] += 1
-        count = self.rewards.counts[machine_id]
-        self.rewards.values[machine_id] += reward
+        ucb_rewards = cast(UCB1RewardsState, self.rewards)
+        ucb_rewards.counts[machine_id] += 1
+        count = ucb_rewards.counts[machine_id]
+        ucb_rewards.values[machine_id] += reward
 
         # Q(A) ← Q(A) + (R - Q(A)) / N(A)
-        old_q = self.rewards.q_values[machine_id]
-        self.rewards.q_values[machine_id] = old_q + (reward - old_q) / count
+        old_q = ucb_rewards.q_values[machine_id]
+        ucb_rewards.q_values[machine_id] = old_q + (reward - old_q) / count
 
     def _check_convergence(self):
         """检查是否达到收敛条件"""
