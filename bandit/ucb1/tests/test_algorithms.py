@@ -5,6 +5,7 @@
 
 import pytest
 import random
+import numpy as np
 from core.environment import RLEnv
 from ucb1.schemas import UCB1RewardsState
 from ucb1.algorithms import ucb1
@@ -49,8 +50,8 @@ def test_ucb1_after_all_initialized(simple_env, rng):
     rewards = UCB1RewardsState.from_env(simple_env)
     # 模拟初始化：每个臂拉动一次
     rewards.counts = [1, 1]
-    rewards.values = [1.0, 0.5]  # arm 0 奖励高
-    rewards.q_values = [1.0, 0.5]
+    rewards.values = [1.0, 0.5]
+    rewards.q_values = np.array([1.0, 0.5])
 
     # steps=2，所有初始化完成，计算 UCB
     action = ucb1(rewards, rng, 2)
@@ -73,11 +74,11 @@ def test_ucb1_all_counts_positive_low_steps(simple_env, rng):
     rewards = UCB1RewardsState.from_env(simple_env)
     rewards.counts = [1, 1]
     rewards.values = [0.5, 0.5]
-    rewards.q_values = [0.5, 0.5]
+    rewards.q_values = np.array([0.5, 0.5])
 
     # steps=1，log(1)=0，UCB=0.5 + 0 =0.5，选择任意（假设 max index 取第一个）
     action = ucb1(rewards, rng, 1)
-    assert action in [0, 1]  # 相等，应返回 index 0 (max 默认取第一个)
+    assert action in [0, 1]
 
 
 def test_ucb1_error_path_division_avoided(simple_env, rng):
@@ -89,4 +90,32 @@ def test_ucb1_error_path_division_avoided(simple_env, rng):
 
     # steps=2，应选择未探索的 1，不计算 UCB
     action = ucb1(rewards, rng, 2)
-    assert action == 1  # 未进入 UCB 计算，避免 /0
+    assert action == 1
+
+
+def test_ucb1_numpy_compatibility(simple_env, rng):
+    """测试 NumPy 兼容性：验证向量化计算"""
+    rewards = UCB1RewardsState.from_env(simple_env)
+    rewards.counts = [1, 1]
+    rewards.values = [1.0, 0.0]
+    rewards.q_values = np.array([1.0, 0.0])
+
+    action = ucb1(rewards, rng, 10)
+
+    # log(10) ≈ 2.3, sqrt(2*2.3/1) ≈ 2.14
+    # UCB0 ≈ 1 + 2.14 = 3.14
+    # UCB1 ≈ 0 + 2.14 = 2.14
+    # 选择 0
+    assert action == 0
+
+
+def test_ucb1_zero_counts_handling(simple_env, rng):
+    """测试零 counts 处理：使用 max(counts, 1) 避免除零"""
+    rewards = UCB1RewardsState.from_env(simple_env)
+    rewards.counts = [0, 1]
+    rewards.values = [0.0, 1.0]
+    rewards.q_values = np.array([0.0, 1.0])
+
+    # 应优先选择未探索臂 0
+    action = ucb1(rewards, rng, 2)
+    assert action == 0

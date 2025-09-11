@@ -6,9 +6,9 @@
 
 from __future__ import annotations
 
-from typing import List
 from dataclasses import dataclass
-from pydantic import Field
+from pydantic import Field, ConfigDict
+import numpy as np
 
 from core.schemas import BaseRewardsState
 from core.environment import RLEnv
@@ -23,8 +23,10 @@ class UCBInitState:
 class UCB1RewardsState(BaseRewardsState):
     """UCB1 Agent 获得的奖励记录"""
 
-    q_values: List[float] = Field(default_factory=list, description="每个机器的Q值")
-    ucb_values: List[float] = Field(default_factory=list, description="每个机器的UCB值")
+    model_config = ConfigDict(arbitrary_types_allowed=True)
+
+    q_values: np.ndarray = Field(default_factory=lambda: np.zeros(0, dtype=np.float64), description="每个机器的Q值")
+    ucb_values: np.ndarray = Field(default_factory=lambda: np.zeros(0, dtype=np.float64), description="每个机器的UCB值")
     
     _ucb_states: UCBInitState = UCBInitState()
 
@@ -60,6 +62,6 @@ class UCB1RewardsState(BaseRewardsState):
         return cls(
             values=[initial_value] * num_machines,
             counts=[initial_count] * num_machines,
-            q_values=[initial_value] * num_machines,
-            ucb_values=[0] * num_machines,
+            q_values=np.array([initial_value] * num_machines, dtype=np.float64),
+            ucb_values=np.array([0.0] * num_machines, dtype=np.float64),
         )

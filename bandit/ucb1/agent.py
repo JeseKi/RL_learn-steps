@@ -1,12 +1,13 @@
 """UCB1算法模块：UCB1算法代理类
 
 公开接口：
-- UCB1Agent: UCB1算法代理类
+- UCBAgent: UCB1算法代理类
 """
 
 from __future__ import annotations
 
 from typing import cast, Callable
+import numpy as np
 
 from core.agent import BaseAgent
 from core.environment import RLEnv
@@ -47,9 +48,24 @@ class UCBAgent(BaseAgent):
         self.rewards = UCB1RewardsState.from_env(env)
         self.ucb1_algorithm = ucb1_algorithm
 
-    def act(self, **kwargs) -> int:
+    def act(self, **_) -> int:
         """选择行动（拉动哪个老虎机）"""
-        choice = self.ucb1_algorithm(cast(UCB1RewardsState, self.rewards), self.rng, self.steps)
+        ucb_rewards = cast(UCB1RewardsState, self.rewards)
+        steps = self.steps
+
+        if not ucb_rewards.ucb_states.ucb_inited:
+            choice = ucb_rewards.ucb_states.ucb_inited_index
+        else:
+            log_steps = np.log(steps) if steps > 0 else 0.0
+            counts_np = np.array(ucb_rewards.counts, dtype=np.float64)
+            q_values = ucb_rewards.q_values
+
+            ucb_values = q_values + np.sqrt(2 * log_steps / np.maximum(counts_np, 1))
+
+            ucb_rewards.ucb_values = ucb_values
+
+            choice = int(np.argmax(ucb_values))
+
         self.steps += 1
         return choice
 

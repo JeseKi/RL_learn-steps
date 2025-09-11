@@ -5,18 +5,23 @@
 """
 
 import random
-import math
+import numpy as np
 
 from .schemas import UCB1RewardsState
 
 
 # UCB1 系算法
-def ucb1(rewards: UCB1RewardsState, _: random.Random, steps: int, **__) -> int:
+def ucb1(rewards: UCB1RewardsState, rng: random.Random, steps: int, **__) -> int:
     """UCB1 算法：基于置信区间的上界选择最优的老虎机"""
-    for i in range(len(rewards.values)):  # 更新所有机器的UCB值
-        if not rewards.ucb_states.ucb_inited:
-            return rewards.ucb_states.ucb_inited_index
-        rewards.ucb_values[i] = rewards.q_values[i] + math.sqrt(
-            2 * math.log(steps) / rewards.counts[i]
-        )
-    return rewards.ucb_values.index(max(rewards.ucb_values))
+    if not rewards.ucb_states.ucb_inited:
+        return rewards.ucb_states.ucb_inited_index
+    
+    log_steps = np.log(steps) if steps > 0 else 0.0
+    counts_np = np.array(rewards.counts, dtype=np.float64)
+    q_values = rewards.q_values
+    
+    ucb_values = q_values + np.sqrt(2 * log_steps / np.maximum(counts_np, 1))
+    
+    rewards.ucb_values = ucb_values
+    
+    return int(np.argmax(ucb_values))

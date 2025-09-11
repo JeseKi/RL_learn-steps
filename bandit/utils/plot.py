@@ -34,7 +34,6 @@ def plot_metrics_history(agents: List[BaseAgent], agent_name: str, file_name: st
         title_font_prop = FontProperties(size=16)
 
     # 2. 准备数据
-    num_steps: int = agents[0].steps
 
     # 收集所有记录的时间步
     recorded_steps = set()
