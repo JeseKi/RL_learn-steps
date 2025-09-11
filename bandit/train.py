@@ -1,10 +1,9 @@
 from dataclasses import dataclass
-from typing import Callable, List, Tuple, Optional
+from typing import Callable, List, Tuple
 
 from core.agent import BaseAgent
 from core.schemas import BaseRewardsState
 from core.environment import RLEnv
-from greedy.config import EpsilonDecreasingConfig
 
 
 @dataclass
@@ -22,11 +21,11 @@ def batch_train(
     count: int,
     agent_factory: Callable[..., BaseAgent],
     env: RLEnv,
-    epsilon_config: Optional[EpsilonDecreasingConfig],
     steps: int,
+    seed: int,
     convergence_threshold: float,
     convergence_min_steps: int,
-    seed: int,
+    log_steps: int = 100,
     **kwargs,
 ) -> Tuple[List[BaseAgent], BaseRewardsState, AverageMetrics]:
     """批训练 Agent，传入数量，代理工厂函数，环境，步数和初始种子即可训练
@@ -35,7 +34,6 @@ def batch_train(
         count (int): 训练数量
         agent_factory (Callable[..., BaseAgent]): 创建代理的工厂函数
         env (RLEnv): 环境
-        epsilon_config (Optional[EpsilonDecreasingConfig], optional): ε-递减配置
         steps (int): 步数
         convergence_threshold (float): 收敛阈值
         convergence_min_steps (int): 最小收敛步数
@@ -54,22 +52,22 @@ def batch_train(
             "convergence_min_steps": convergence_min_steps,
             **kwargs,
         }
-        if epsilon_config is not None:
-            agent_kwargs["epsilon_config"] = epsilon_config
         _agents.append(agent_factory(env, **agent_kwargs))
 
-    agents, reward, metrics = train(_agents, steps)
+    agents, reward, metrics = train(_agents, steps, log_steps)
     return agents, reward, metrics
 
 def train(
     agents: List[BaseAgent],
     steps: int,
+    log_steps: int,
 ) -> Tuple[List[BaseAgent], BaseRewardsState, AverageMetrics]:
     """按批量对 agents 进行训练，一般对这些 agents 设置不同的 seed
 
     Args:
         agents (List[BaseAgent]): 不同 seed 的 agents
         steps (int): 每个 agents 的步数
+        log_steps (int): 每个 agents 的日志步数
 
     Returns:
         Tuple[List[BaseAgent], BaseRewardsState, AverageMetrics]: 返回训练后的 agents 和平均后的奖励
@@ -79,7 +77,7 @@ def train(
 
     _rewards: List[BaseRewardsState] = []
     for agent in agents:
-        _round(agent=agent, steps=steps)
+        _round(agent=agent, steps=steps, log_interval=log_steps)
         _rewards.append(agent.rewards)
 
     avg = _calculate_averages(agents=agents)
@@ -87,17 +85,18 @@ def train(
     return (agents, avg[0], avg[1])
 
 
-def _round(agent: BaseAgent, steps: int):
+def _round(agent: BaseAgent, steps: int, log_interval: int):
     _printed: List[bool] = [False, False]
-    for _ in range(steps):
+    for i in range(steps):
         action = agent.act(
             epsilon_state=getattr(agent, "episode_state", None),
             epsilon=0.1,
         )
         _ = agent.pull_machine(action)
-        agent.metrics_history.append(
-            (agent.rewards.model_copy(), agent.metric(), agent.steps - 1)
-        )
+        if agent.steps % log_interval == 0:
+            agent.metrics_history.append(
+                (agent.rewards.model_copy(), agent.metric(), agent.steps)
+            )
 
         episode_state = getattr(agent, "episode_state", None)
         if episode_state and episode_state.epsilon <= 0.5 and not _printed[0]:

@@ -36,17 +36,27 @@ def plot_metrics_history(agents: List[BaseAgent], agent_name: str, file_name: st
     # 2. 准备数据
     num_steps: int = agents[0].steps
 
-    avg_history = {
-        "regret": np.zeros(num_steps),
-        "regret_rate": np.zeros(num_steps),
-        "total_reward": np.zeros(num_steps),
-        "optimal_rate": np.zeros(num_steps),
-        "convergence_steps": np.zeros(num_steps),
-        "convergence_rate": np.zeros(num_steps),
+    # 收集所有记录的时间步
+    recorded_steps = set()
+    for agent in agents:
+        for _, _, step in agent.metrics_history:
+            recorded_steps.add(step)
+    
+    # 转换为排序后的列表
+    recorded_steps = sorted(list(recorded_steps))
+    
+    # 初始化存储指标历史的字典
+    metrics_history = {
+        "regret": [],
+        "regret_rate": [],
+        "total_reward": [],
+        "optimal_rate": [],
+        "convergence_steps": [],
+        "convergence_rate": [],
     }
 
-    # 遍RewardsStaten
-    for step_idx in range(num_steps):
+    # 遍历所有记录的时间步
+    for step in recorded_steps:
         # 临时存储当前时间步所有 agent 的指标
         step_metrics = {
             "regret": [],
@@ -56,26 +66,27 @@ def plot_metrics_history(agents: List[BaseAgent], agent_name: str, file_name: st
             "convergence_steps": [],
             "convergence_rate": [],
         }
-        # 遍历每个 agent
+        
+        # 遍历每个 agent，查找在当前时间步记录的数据
         for agent in agents:
-            # agent.metrics_history 的索引与 step_idx 一致
-            if step_idx < len(agent.metrics_history):
-                metrics_at_step = agent.metrics_history[step_idx][
-                    1
-                ]  # (RewardsState, Metrics, int) -> Metrics
-                step_metrics["regret"].append(metrics_at_step.regret)
-                step_metrics["regret_rate"].append(metrics_at_step.regret_rate)
-                step_metrics["total_reward"].append(sum(metrics_at_step.rewards.values))
-                step_metrics["optimal_rate"].append(metrics_at_step.optimal_rate)
-                step_metrics["convergence_steps"].append(agent.convergence_steps)
-                step_metrics["convergence_rate"].append(1 if agent.convergence_steps > 0 else 0)
+            # 在 agent 的 metrics_history 中查找对应时间步的数据
+            for rewards_state, metrics, recorded_step in agent.metrics_history:
+                if recorded_step == step:
+                    step_metrics["regret"].append(metrics.regret)
+                    step_metrics["regret_rate"].append(metrics.regret_rate)
+                    step_metrics["total_reward"].append(sum(metrics.rewards.values))
+                    step_metrics["optimal_rate"].append(metrics.optimal_rate)
+                    step_metrics["convergence_steps"].append(agent.convergence_steps)
+                    step_metrics["convergence_rate"].append(1 if agent.convergence_steps > 0 else 0)
+                    break  # 找到对应时间步的数据后跳出循环
 
-        # 计算当前时间步的平均值并存入 avg_history
-        for key in avg_history:
+        # 计算当前时间步的平均值并存入 metrics_history
+        for key in metrics_history:
             if step_metrics[key]:  # 确保列表不为空
-                avg_history[key][step_idx] = np.mean(step_metrics[key])
-
-    steps_axis = np.arange(1, num_steps + 1)
+                metrics_history[key].append(np.mean(step_metrics[key]))
+            else:
+                # 如果没有 agent 在这个时间步有数据，添加 NaN
+                metrics_history[key].append(np.nan)
 
     # 3. 开始绘图
     fig, axes = plt.subplots(2, 3, figsize=(18, 12), dpi=100)
@@ -95,7 +106,8 @@ def plot_metrics_history(agents: List[BaseAgent], agent_name: str, file_name: st
 
     for i, (metric_key, title) in enumerate(plot_config.items()):
         ax = axes[i]
-        ax.plot(steps_axis, avg_history[metric_key], label=title)
+        # 只在有数据记录的时间步绘制数据点
+        ax.plot(recorded_steps, metrics_history[metric_key], label=title, marker='o', markersize=3)
         ax.set_title(title, fontproperties=font_prop)
         ax.set_xlabel("时间步 (Steps)", fontproperties=font_prop)
         ax.set_ylabel("平均值", fontproperties=font_prop)

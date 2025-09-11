@@ -6,22 +6,22 @@
 
 from __future__ import annotations
 
-from typing import cast
+from typing import cast, Callable
 
 from core.agent import BaseAgent
 from core.environment import RLEnv
 from core.schemas import Metrics
 from .schemas import UCB1RewardsState
-from .algorithms import ucb1
 
 
-class UCB1Agent(BaseAgent):
+class UCBAgent(BaseAgent):
     """UCB1算法代理类"""
 
     def __init__(
         self,
         name: str,
         env: RLEnv,
+        ucb1_algorithm: Callable[..., int],
         convergence_threshold: float = 0.9,
         convergence_min_steps: int = 100,
         seed: int = 42,
@@ -31,6 +31,7 @@ class UCB1Agent(BaseAgent):
         Args:
             name (str): 代理名称
             env (RLEnv): 环境
+            ucb1_algorithm (Callable[..., int]): UCB1算法
             convergence_threshold (float, optional): 收敛阈值
             convergence_min_steps (int, optional): 最小收敛步数
             seed (int, optional): 随机种子
@@ -44,10 +45,11 @@ class UCB1Agent(BaseAgent):
         )
 
         self.rewards = UCB1RewardsState.from_env(env)
+        self.ucb1_algorithm = ucb1_algorithm
 
     def act(self, **kwargs) -> int:
         """选择行动（拉动哪个老虎机）"""
-        choice = ucb1(cast(UCB1RewardsState, self.rewards), self.rng, self.steps)
+        choice = self.ucb1_algorithm(cast(UCB1RewardsState, self.rewards), self.rng, self.steps)
         self.steps += 1
         return choice
 
