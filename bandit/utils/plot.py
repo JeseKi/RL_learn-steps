@@ -8,14 +8,14 @@ import numpy as np
 
 from pathlib import Path
 
-def plot_metrics_history(agents: List[BaseAgent], agent_name: str, file_name: str):
+def plot_metrics_history(agents: List[BaseAgent], agent_name: str, file_name: Path):
     """
     根据训练后的一组 agent 的 metrics_history 绘制指标变化图。
 
     Args:
         agents (List[GreedyAgent]): 经过训练的 agent 列表。
         agent_name (str): 这组 agent 的名称，用于图表标题。
-        file_name (str): 保存的文件名（例如："experiment_result.png"）
+        file_name (Path): 保存的文件名（例如："experiment_result.png"）
     """
 
     if not agents:
@@ -116,7 +116,7 @@ def plot_metrics_history(agents: List[BaseAgent], agent_name: str, file_name: st
     plt.tight_layout(rect=(0, 0, 1, 0.96))
     plt.show()
     
-    if not file_name.endswith(".png"):
-        file_name += ".png"
+    if not file_name.suffix == ".png":
+        file_name = file_name.with_suffix(".png")
     fig.savefig(file_name)
     print(f"✅ 实验数据已保存至 {file_name}")
