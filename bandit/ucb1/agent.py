@@ -35,17 +35,21 @@ class UCB1Agent(BaseAgent):
             convergence_min_steps (int, optional): 最小收敛步数
             seed (int, optional): 随机种子
         """
-        super().__init__(name=name, env=env, seed=seed)
+        super().__init__(
+            name=name, 
+            env=env, 
+            convergence_threshold=convergence_threshold,
+            convergence_min_steps=convergence_min_steps,
+            seed=seed
+        )
 
         self.rewards = UCB1RewardsState.from_env(env)
-        self.convergence_threshold = convergence_threshold
-        self.convergence_min_steps = convergence_min_steps
-        self.convergence_steps = 0
 
     def act(self, **kwargs) -> int:
         """选择行动（拉动哪个老虎机）"""
+        choice = ucb1(cast(UCB1RewardsState, self.rewards), self.rng, self.steps)
         self.steps += 1
-        return ucb1(cast(UCB1RewardsState, self.rewards), self.rng, self.steps)
+        return choice
 
     def pull_machine(self, machine_id: int) -> int:
         """拉动指定机器并更新状态"""

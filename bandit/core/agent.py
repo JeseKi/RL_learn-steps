@@ -19,6 +19,8 @@ class BaseAgent(ABC):
         self,
         name: str,
         env: RLEnv,
+        convergence_threshold: float = 0.9,
+        convergence_min_steps: int = 100,
         seed: int = 42,
     ) -> None:
         """抽象代理基类初始化
@@ -26,6 +28,8 @@ class BaseAgent(ABC):
         Args:
             name (str): 代理名称
             env (RLEnv): 环境
+            convergence_threshold (float): 收敛阈值
+            convergence_min_steps (int): 最小收敛步数
             seed (int): 随机种子
         """
         self.name = name
@@ -35,6 +39,9 @@ class BaseAgent(ABC):
         self.steps: int = 0
         self.metrics_history: List[Tuple[BaseRewardsState, Metrics, int]] = []
         self.rewards: BaseRewardsState = BaseRewardsState.from_env(env)
+        self.convergence_threshold = convergence_threshold
+        self.convergence_min_steps = convergence_min_steps
+        self.convergence_steps = 0
 
     @abstractmethod
     def act(self, **kwargs) -> int:

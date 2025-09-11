@@ -43,7 +43,13 @@ class GreedyAgent(BaseAgent):
             convergence_min_steps (int, optional): 达到收敛条件的最小次数，至少要达到这个次数才能算作收敛
             seed (int, optional): 种子
         """
-        super().__init__(name=name, env=env, seed=seed)
+        super().__init__(
+            name=name, 
+            env=env, 
+            convergence_threshold=convergence_threshold,
+            convergence_min_steps=convergence_min_steps,
+            seed=seed
+        )
 
         self.greedy_algorithm = greedy_algorithm
         self.episode_state = EpsilonDecreasingState(
@@ -57,10 +63,7 @@ class GreedyAgent(BaseAgent):
             optimistic_times=optimistic_times,
         )
         self.optimistic_init = optimistic_init
-        self.convergence_threshold = convergence_threshold
-        self.convergence_min_steps = convergence_min_steps
         self.optimistic_inited = False
-        self.convergence_steps = 0
 
     def act(self, **kwargs) -> int:
         """选择行动（拉动哪个老虎机）"""
@@ -74,7 +77,10 @@ class GreedyAgent(BaseAgent):
                     return machine_id
 
             self.optimistic_inited = True
-        return self.greedy_algorithm(greedy_rewards, self.rng, **kwargs)
+        
+        choice = self.greedy_algorithm(greedy_rewards, self.rng, **kwargs)
+        self.steps += 1
+        return choice
 
     def pull_machine(self, machine_id: int) -> int:
         """拉动指定机器并更新状态"""
