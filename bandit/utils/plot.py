@@ -26,8 +26,6 @@ def plot_metrics_history(agents: List[BaseAgent], agent_name: str, file_name: Pa
     if font_path.exists():
         font_prop = FontProperties(fname=font_path, size=12)
         title_font_prop = FontProperties(fname=font_path, size=16)
-        print("成功加载字体：", font_path)
-
     else:
         print(f"警告：找不到字体文件 {font_path}，将使用默认字体，中文可能显示为方框。")
         font_prop = FontProperties(size=12)
@@ -119,4 +117,4 @@ def plot_metrics_history(agents: List[BaseAgent], agent_name: str, file_name: Pa
     if not file_name.suffix == ".png":
         file_name = file_name.with_suffix(".png")
     fig.savefig(file_name)
-    print(f"✅ 实验数据已保存至 {file_name}")
+    print(f"✅ 图表已保存至 {file_name}")

@@ -29,6 +29,8 @@ def save_experiment_data(
     # 写入文件
     if not file_name.parent.exists():
         file_name.parent.mkdir(parents=True, exist_ok=True)
+    if not file_name.suffix == ".json":
+        file_name = file_name.with_suffix(".json")
     with open(file_name, "w", encoding="utf-8") as f:
         json.dump(experiment_data, f, ensure_ascii=False, indent=4)
 
