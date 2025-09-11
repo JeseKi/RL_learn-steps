@@ -1,13 +1,13 @@
-from dataclasses import dataclass
 from typing import Callable, List, Tuple
+
+from pydantic import BaseModel
 
 from core.agent import BaseAgent
 from core.schemas import BaseRewardsState
 from core.environment import RLEnv
 
 
-@dataclass
-class AverageMetrics:
+class AverageMetrics(BaseModel):
     """平均指标结果"""
 
     avg_regret: float
