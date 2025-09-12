@@ -1,4 +1,4 @@
-from typing import List
+from typing import Any, List, Dict, Set
 
 from core import BaseAgent
 
@@ -34,16 +34,16 @@ def plot_metrics_history(agents: List[BaseAgent], agent_name: str, file_name: Pa
     # 2. 准备数据
 
     # 收集所有记录的时间步
-    recorded_steps = set()
+    recorded_steps: Set[int] = set()
     for agent in agents:
         for _, _, step in agent.metrics_history:
             recorded_steps.add(step)
     
     # 转换为排序后的列表
-    recorded_steps = sorted(list(recorded_steps))
+    recorded_steps_list: List[int] = sorted(list(recorded_steps))
     
     # 初始化存储指标历史的字典
-    metrics_history = {
+    metrics_history: Dict[str, Any] = {
         "regret": [],
         "regret_rate": [],
         "total_reward": [],
@@ -53,9 +53,9 @@ def plot_metrics_history(agents: List[BaseAgent], agent_name: str, file_name: Pa
     }
 
     # 遍历所有记录的时间步
-    for step in recorded_steps:
+    for step in recorded_steps_list:
         # 临时存储当前时间步所有 agent 的指标
-        step_metrics = {
+        step_metrics: Dict[str, Any] = {
             "regret": [],
             "regret_rate": [],
             "total_reward": [],
@@ -104,7 +104,7 @@ def plot_metrics_history(agents: List[BaseAgent], agent_name: str, file_name: Pa
     for i, (metric_key, title) in enumerate(plot_config.items()):
         ax = axes[i]
         # 只在有数据记录的时间步绘制数据点
-        ax.plot(recorded_steps, metrics_history[metric_key], label=title, marker='o', markersize=3)
+        ax.plot(recorded_steps_list, metrics_history[metric_key], label=title, marker='o', markersize=3)
         ax.set_title(title, fontproperties=font_prop)
         ax.set_xlabel("时间步 (Steps)", fontproperties=font_prop)
         ax.set_ylabel("平均值", fontproperties=font_prop)
