@@ -34,6 +34,7 @@ def _plot_2x2(
     min_cross_gap_ratio: float = 0.1,
     show: bool = False,
     debug: bool = False,
+    x_log: bool = False,
 ) -> None:
     plt, font_prop, title_font_prop = _ensure_matplotlib()
     fig, axes = plt.subplots(2, 2, figsize=(16, 10), dpi=120)
@@ -58,6 +59,14 @@ def _plot_2x2(
             continue
         algo_to_series: Dict[str, AggregatedSeries] = {s.algorithm: s for s in series_list}
         steps = series_list[0].steps
+        # 轴尺度
+        if x_log:
+            try:
+                ax.set_xscale("log", base=10)
+            except TypeError:
+                # 兼容旧版本 matplotlib
+                ax.set_xscale("log")
+
         algo_to_color: Dict[str, str] = {}
         for algo, s in algo_to_series.items():
             c = next(color_cycle)
@@ -105,6 +114,7 @@ def cli_main(argv: Optional[Sequence[str]] = None) -> int:
     parser.add_argument("--title", default=None, help="图表标题")
     parser.add_argument("--min-cross-gap", type=float, default=0.1, help="交点最小间距占比（默认 0.1）")
     parser.add_argument("--show", action="store_true", help="绘制后显示图像（默认不显示）")
+    parser.add_argument("--x-log", action="store_true", help="将 X 轴改为对数尺度（指数增长视图，基数10）")
     parser.add_argument("--debug", action="store_true", help="输出调试信息")
     args = parser.parse_args(list(argv) if argv is not None else None)
 
@@ -124,6 +134,7 @@ def cli_main(argv: Optional[Sequence[str]] = None) -> int:
         min_cross_gap_ratio=args.min_cross_gap,
         show=bool(args.show),
         debug=bool(args.debug),
+        x_log=bool(args.x_log),
     )
     print(f"✅ 图表已保存：{args.out}")
     return 0
