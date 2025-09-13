@@ -1,3 +1,16 @@
+"""
+绘图工具模块：
+
+公开接口：
+- plot_metrics_history(agents, agent_name, file_name): 从 Agent 的 metrics_history 绘制平均曲线
+- plot_process_json(json_path, metric_key, title, file_name): 从过程数据 JSON 绘制指定指标
+
+数据流预期：
+- 训练过程若使用 ProcessDataLogger 进行采样与记录，则 metrics_history 中仅在网格步采样；
+- plot_metrics_history 直接基于各 Agent 的 metrics_history 聚合后绘图；
+- 若已将过程数据保存为 JSON，可使用 plot_process_json 读取并绘制单条指标随步数变化曲线。
+"""
+
 from typing import Any, List, Dict, Set
 
 from core import BaseAgent
@@ -7,6 +20,10 @@ from matplotlib.font_manager import FontProperties
 import numpy as np
 
 from pathlib import Path
+import json
+
+from utils.schemas import ProcessDataDump
+
 
 def plot_metrics_history(agents: List[BaseAgent], agent_name: str, file_name: Path):
     """
@@ -118,3 +135,59 @@ def plot_metrics_history(agents: List[BaseAgent], agent_name: str, file_name: Pa
         file_name = file_name.with_suffix(".png")
     fig.savefig(file_name)
     print(f"✅ 图表已保存至 {file_name}")
+
+
+def plot_process_json(json_path: Path, metric_key: str, title: str, file_name: Path) -> None:
+    """
+    根据过程数据 JSON（ProcessDataDump）绘制某个指标随时间步的曲线。
+
+    Args:
+        json_path (Path): 过程数据 JSON 文件路径
+        metric_key (str): 数据点中 `data` 内的键，例如 "total_reward"、"regret" 等
+        title (str): 图表标题
+        file_name (Path): 保存的文件名（例如："process_curve.png"）
+    """
+    if not json_path.exists():
+        raise FileNotFoundError(f"未找到过程数据文件：{json_path}")
+    if not json_path.suffix == ".json":
+        json_path = json_path.with_suffix(".json")
+        
+    with open(json_path, "r", encoding="utf-8") as f:
+        data = json.load(f)
+    dump = ProcessDataDump(**data)
+
+    steps = [p.step for p in dump.points]
+    values = [p.data.get(metric_key, None) for p in dump.points]
+
+    # 过滤 None
+    steps_filtered: List[int] = []
+    values_filtered: List[float] = []
+    for s, v in zip(steps, values):
+        if v is not None:
+            steps_filtered.append(s)
+            values_filtered.append(v)
+
+    if not steps_filtered:
+        raise ValueError(f"在过程数据中未找到指标 {metric_key} 的有效记录")
+
+    font_path = Path.cwd() / "assets" / "微软雅黑.ttf"
+    if font_path.exists():
+        font_prop = FontProperties(fname=font_path, size=12)
+        title_font_prop = FontProperties(fname=font_path, size=16)
+    else:
+        print(f"警告：找不到字体文件 {font_path}，将使用默认字体，中文可能显示为方框。")
+        font_prop = FontProperties(size=12)
+        title_font_prop = FontProperties(size=16)
+
+    fig, ax = plt.subplots(1, 1, figsize=(9, 6), dpi=100)
+    ax.plot(steps_filtered, values_filtered, marker='o', markersize=3)
+    ax.set_title(title, fontproperties=title_font_prop)
+    ax.set_xlabel("时间步 (Steps)", fontproperties=font_prop)
+    ax.set_ylabel(metric_key, fontproperties=font_prop)
+    ax.grid(True, linestyle="--", alpha=0.6)
+
+    plt.tight_layout()
+    if not file_name.suffix == ".png":
+        file_name = file_name.with_suffix(".png")
+    fig.savefig(file_name)
+    print(f"✅ 过程曲线已保存至 {file_name}")

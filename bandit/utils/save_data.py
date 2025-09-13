@@ -27,8 +27,9 @@ from pathlib import Path
 import math
 from typing import Any, Dict, List, Optional
 
+from pydantic import BaseModel
+
 from core.schemas import BaseRewardsState
-from train import AverageMetrics
 from utils.schemas import ProcessDataDump, ProcessDataPoint
 
 
@@ -147,7 +148,7 @@ class ProcessDataLogger:
 
 
 def save_experiment_data(
-    reward: BaseRewardsState, metrics: AverageMetrics, file_name: Path
+    reward: BaseRewardsState, metrics: BaseModel, file_name: Path
 ):
     """保存实验最终结果（奖励 + 平均指标）为 JSON 文件。
 

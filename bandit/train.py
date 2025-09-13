@@ -1,10 +1,23 @@
-from typing import Callable, List, Tuple
+"""训练模块：提供批训练与单次训练流程
+
+公开接口：
+- AverageMetrics: 训练平均指标的 Pydantic 模型
+- batch_train: 按批次创建与训练多个 Agent
+- train: 训练已构造的 Agent 列表，支持过程数据记录器接入
+
+内部方法：
+- _round: 对单个 Agent 进行 steps 次训练，支持基于记录器网格进行采样
+- _calculate_averages: 聚合训练结束后的平均指标
+"""
+
+from typing import Callable, List, Tuple, Optional, Dict, Any
 
 from pydantic import BaseModel
 
 from core.agent import BaseAgent
 from core.schemas import BaseRewardsState
 from core.environment import RLEnv
+from utils.save_data import ProcessDataLogger
 
 
 class AverageMetrics(BaseModel):
@@ -25,7 +38,7 @@ def batch_train(
     seed: int,
     convergence_threshold: float,
     convergence_min_steps: int,
-    log_steps: int = 100,
+    process_logger: ProcessDataLogger,
     **kwargs,
 ) -> Tuple[List[BaseAgent], BaseRewardsState, AverageMetrics]:
     """批训练 Agent，传入数量，代理工厂函数，环境，步数和初始种子即可训练
@@ -54,13 +67,17 @@ def batch_train(
         }
         _agents.append(agent_factory(env, **agent_kwargs))
 
-    agents, reward, metrics = train(_agents, steps, log_steps)
+    agents, reward, metrics = train(
+        _agents,
+        steps,
+        process_logger=process_logger,
+    )
     return agents, reward, metrics
 
 def train(
     agents: List[BaseAgent],
     steps: int,
-    log_steps: int,
+    process_logger: ProcessDataLogger,
 ) -> Tuple[List[BaseAgent], BaseRewardsState, AverageMetrics]:
     """按批量对 agents 进行训练，一般对这些 agents 设置不同的 seed
 
@@ -77,7 +94,11 @@ def train(
 
     _rewards: List[BaseRewardsState] = []
     for agent in agents:
-        _round(agent=agent, steps=steps, log_interval=log_steps)
+        _round(
+            agent=agent,
+            steps=steps,
+            process_logger=process_logger,
+        )
         _rewards.append(agent.rewards)
 
     avg = _calculate_averages(agents=agents)
@@ -85,7 +106,11 @@ def train(
     return (agents, avg[0], avg[1])
 
 
-def _round(agent: BaseAgent, steps: int, log_interval: int):
+def _round(
+    agent: BaseAgent,
+    steps: int,
+    process_logger: ProcessDataLogger,
+):
     _printed: List[bool] = [False, False]
     for i in range(steps):
         action = agent.act(
@@ -93,10 +118,26 @@ def _round(agent: BaseAgent, steps: int, log_interval: int):
             epsilon=0.1,
         )
         _ = agent.pull_machine(action)
-        if agent.steps % log_interval == 0:
+        # 基于记录器采样或按固定间隔采样
+        do_record = False
+        do_record = process_logger.should_record(agent.steps)
+
+        if do_record:
+            metrics = agent.metric()
             agent.metrics_history.append(
-                (agent.rewards.model_copy(), agent.metric(), agent.steps)
+                (agent.rewards.model_copy(), metrics, agent.steps)
             )
+            # 若提供记录器，则追加过程数据点（与指标保存逻辑解耦）
+            data: Dict[str, Any] = {
+                "agent_name": getattr(agent, "name", "unknown"),
+                "seed": getattr(agent, "seed", None),
+                "regret": metrics.regret,
+                "regret_rate": metrics.regret_rate,
+                "total_reward": float(sum(metrics.rewards.values)),
+                "optimal_rate": metrics.optimal_rate,
+                "convergence_steps": getattr(agent, "convergence_steps", 0),
+            }
+            process_logger.add(agent.steps, data)
 
         episode_state = getattr(agent, "episode_state", None)
         if episode_state and episode_state.epsilon <= 0.5 and not _printed[0]:
