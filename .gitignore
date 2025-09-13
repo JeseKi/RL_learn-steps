@@ -3,3 +3,5 @@ AGENTS.md
 __pycache__/
 *.npy
 experiment_data
+mlruns
+.env

@@ -11,3 +11,5 @@ uv
 ruff
 ty
 pytest
+mlflow[databricks]
+python-dotenv
