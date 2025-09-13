@@ -9,7 +9,9 @@ from utils.schemas import ProcessDataDump
 def test_should_record_grid():
     total_steps = 250
     grid_size = 50
-    logger = ProcessDataLogger(run_id="t1", total_steps=total_steps, grid_size=grid_size)
+    logger = ProcessDataLogger(
+        run_id="t1", total_steps=total_steps, grid_size=grid_size
+    )
 
     # 网格应包含 1 与 T，并严格递增且不越界
     grid = logger.grid
@@ -26,7 +28,9 @@ def test_should_record_grid():
 def test_add_and_save_process_data(tmp_path: Path):
     total_steps = 250
     grid_size = 50
-    logger = ProcessDataLogger(run_id="run-xyz", total_steps=total_steps, grid_size=grid_size)
+    logger = ProcessDataLogger(
+        run_id="run-xyz", total_steps=total_steps, grid_size=grid_size
+    )
     for s in range(1, total_steps + 1):
         if logger.should_record(s):
             logger.add(s, {"reward": float(s), "note": f"第{s}步"})

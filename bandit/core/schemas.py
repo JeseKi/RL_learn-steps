@@ -12,11 +12,11 @@ from pydantic import BaseModel, ConfigDict, Field
 
 from .environment import RLEnv
 
+
 class BaseRewardsState(BaseModel):
     """基础奖励状态模型"""
-    model_config = ConfigDict(
-        arbitrary_types_allowed=True
-    )
+
+    model_config = ConfigDict(arbitrary_types_allowed=True)
 
     values: List[float] = Field(description="每个机器的累积奖励")
     counts: List[float] = Field(description="每个机器的拉动次数")

@@ -22,9 +22,16 @@ class UCBInitState:
 
 class UCB1RewardsState(BaseRewardsState):
     """UCB1 Agent 获得的奖励记录"""
-    q_values: np.ndarray = Field(default_factory=lambda: np.zeros(0, dtype=np.float64), description="每个机器的Q值")
-    ucb_values: np.ndarray = Field(default_factory=lambda: np.zeros(0, dtype=np.float64), description="每个机器的UCB值")
-    
+
+    q_values: np.ndarray = Field(
+        default_factory=lambda: np.zeros(0, dtype=np.float64),
+        description="每个机器的Q值",
+    )
+    ucb_values: np.ndarray = Field(
+        default_factory=lambda: np.zeros(0, dtype=np.float64),
+        description="每个机器的UCB值",
+    )
+
     _ucb_states: UCBInitState = UCBInitState()
 
     @property

@@ -41,6 +41,7 @@ def _make_env_and_agent(machine_count: int = 5, seed: int = 123) -> TSAgent:
     )
     return agent
 
+
 def test_ts_agent_pull_machine_updates_state():
     """常规与边界：拉动一次机器后，counts 与 values 应按返回奖励正确更新
 
@@ -79,4 +80,3 @@ def test_ts_agent_pull_machine_invalid_machine_id_raises():
 
     with pytest.raises(AssertionError):
         _ = agent.pull_machine(n)  # 越界：有效索引为 [0, n-1]
-

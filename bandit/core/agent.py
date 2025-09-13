@@ -38,7 +38,9 @@ class BaseAgent(ABC):
         self.env: RLEnv = env
         self.steps: int = 0
         self.metrics_history: List[Tuple[BaseRewardsState, Metrics, int]] = []
-        self.rewards: BaseRewardsState = BaseRewardsState.from_env(env=env, initial_value=0.0, initial_count=0)
+        self.rewards: BaseRewardsState = BaseRewardsState.from_env(
+            env=env, initial_value=0.0, initial_count=0
+        )
         self.convergence_threshold = convergence_threshold
         self.convergence_min_steps = convergence_min_steps
         self.convergence_steps = 0

@@ -94,7 +94,7 @@ class ProcessDataLogger:
         self._grid: Optional[List[int]] = None
         self._grid_set: Optional[set[int]] = None
         self._grid_size = grid_size
-        
+
         self._set_total_steps(total_steps)
 
     @property
@@ -108,7 +108,9 @@ class ProcessDataLogger:
         逻辑：使用对数网格 t_grid，当前步数 s 在网格中则记录。
         """
         if self._grid_set is None:
-            raise RuntimeError("未设置 total_steps，无法进行网格采样。请在构造时传入或调用 set_total_steps(total_steps)。")
+            raise RuntimeError(
+                "未设置 total_steps，无法进行网格采样。请在构造时传入或调用 set_total_steps(total_steps)。"
+            )
         s = _normalize_step(step)
         return s in self._grid_set
 
@@ -147,9 +149,7 @@ class ProcessDataLogger:
         self._grid_set = set(grid)
 
 
-def save_experiment_data(
-    reward: BaseRewardsState, metrics: BaseModel, file_name: Path
-):
+def save_experiment_data(reward: BaseRewardsState, metrics: BaseModel, file_name: Path):
     """保存实验最终结果（奖励 + 平均指标）为 JSON 文件。
 
     注意：该函数与“过程数据保存”解耦；若需保存过程数据，请使用 ProcessDataLogger。

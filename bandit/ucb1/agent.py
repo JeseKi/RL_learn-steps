@@ -37,11 +37,11 @@ class UCBAgent(BaseAgent):
             seed (int, optional): 随机种子
         """
         super().__init__(
-            name=name, 
-            env=env, 
+            name=name,
+            env=env,
             convergence_threshold=convergence_threshold,
             convergence_min_steps=convergence_min_steps,
-            seed=seed
+            seed=seed,
         )
 
         self.rewards = UCB1RewardsState.from_env(env=env)

@@ -12,8 +12,8 @@ import numpy as np
 from core.schemas import BaseRewardsState
 from core.environment import RLEnv
 
+
 class TSRewardsState(BaseRewardsState):
-    
     alpha: np.ndarray = Field(..., description="每个机器的 alpha 参数")
     beta: np.ndarray = Field(..., description="每个机器的 beta 参数")
 
@@ -26,7 +26,7 @@ class TSRewardsState(BaseRewardsState):
         _beta = cast(np.ndarray, rng.beta(self.alpha, self.beta))
         best_machine = int(_beta.argmax())
         return best_machine
-            
+
     @classmethod
     def from_env(
         cls: type[TSRewardsState],

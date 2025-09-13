@@ -45,4 +45,3 @@ def test_greedy_optimistic_init_steps_reach_T_and_log_grid(tmp_path: Path):
     recorded_steps = [p.step for p in dump.points]
     assert recorded_steps == logger.grid
     assert recorded_steps[-1] == steps
-

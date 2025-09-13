@@ -43,11 +43,11 @@ class GreedyAgent(BaseAgent):
             seed (int, optional): 种子
         """
         super().__init__(
-            name=name, 
-            env=env, 
+            name=name,
+            env=env,
             convergence_threshold=convergence_threshold,
             convergence_min_steps=convergence_min_steps,
-            seed=seed
+            seed=seed,
         )
 
         self.greedy_algorithm = greedy_algorithm
@@ -77,7 +77,7 @@ class GreedyAgent(BaseAgent):
                     return machine_id
 
             self.optimistic_inited = True
-        
+
         choice = self.greedy_algorithm(greedy_rewards, self.rng, **kwargs)
         self.steps += 1
         return choice

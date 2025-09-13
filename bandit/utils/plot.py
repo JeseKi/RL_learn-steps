@@ -22,7 +22,6 @@ import numpy as np
 from pathlib import Path
 
 
-
 def plot_metrics_history(agents: List[BaseAgent], agent_name: str, file_name: Path):
     """
     根据训练后的一组 agent 的 metrics_history 绘制指标变化图。
@@ -53,10 +52,10 @@ def plot_metrics_history(agents: List[BaseAgent], agent_name: str, file_name: Pa
     for agent in agents:
         for _, _, step in agent.metrics_history:
             recorded_steps.add(step)
-    
+
     # 转换为排序后的列表
     recorded_steps_list: List[int] = sorted(list(recorded_steps))
-    
+
     # 初始化存储指标历史的字典
     metrics_history: Dict[str, Any] = {
         "regret": [],
@@ -78,7 +77,7 @@ def plot_metrics_history(agents: List[BaseAgent], agent_name: str, file_name: Pa
             "convergence_steps": [],
             "convergence_rate": [],
         }
-        
+
         # 遍历每个 agent，查找在当前时间步记录的数据
         for agent in agents:
             # 在 agent 的 metrics_history 中查找对应时间步的数据
@@ -89,7 +88,9 @@ def plot_metrics_history(agents: List[BaseAgent], agent_name: str, file_name: Pa
                     step_metrics["total_reward"].append(sum(metrics.rewards.values))
                     step_metrics["optimal_rate"].append(metrics.optimal_rate)
                     step_metrics["convergence_steps"].append(agent.convergence_steps)
-                    step_metrics["convergence_rate"].append(1 if agent.convergence_steps > 0 else 0)
+                    step_metrics["convergence_rate"].append(
+                        1 if agent.convergence_steps > 0 else 0
+                    )
                     break  # 找到对应时间步的数据后跳出循环
 
         # 计算当前时间步的平均值并存入 metrics_history
@@ -119,7 +120,13 @@ def plot_metrics_history(agents: List[BaseAgent], agent_name: str, file_name: Pa
     for i, (metric_key, title) in enumerate(plot_config.items()):
         ax = axes[i]
         # 只在有数据记录的时间步绘制数据点
-        ax.plot(recorded_steps_list, metrics_history[metric_key], label=title, marker='o', markersize=3)
+        ax.plot(
+            recorded_steps_list,
+            metrics_history[metric_key],
+            label=title,
+            marker="o",
+            markersize=3,
+        )
         ax.set_title(title, fontproperties=font_prop)
         ax.set_xlabel("时间步 (Steps)", fontproperties=font_prop)
         ax.set_ylabel("平均值", fontproperties=font_prop)
@@ -128,7 +135,7 @@ def plot_metrics_history(agents: List[BaseAgent], agent_name: str, file_name: Pa
 
     plt.tight_layout(rect=(0, 0, 1, 0.96))
     plt.show()
-    
+
     if not file_name.suffix == ".png":
         file_name = file_name.with_suffix(".png")
     fig.savefig(file_name)

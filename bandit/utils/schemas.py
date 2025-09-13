@@ -47,7 +47,8 @@ class ProcessDataDump(BaseModel):
     """
 
     run_id: Optional[str] = Field(default=None, description="运行 ID/名称")
-    created_at: str = Field(default_factory=lambda: datetime.now().isoformat(timespec="seconds"))
+    created_at: str = Field(
+        default_factory=lambda: datetime.now().isoformat(timespec="seconds")
+    )
     total_steps: Optional[int] = Field(default=None, ge=1, description="实验总步数")
     points: List[ProcessDataPoint] = Field(default_factory=list)
-

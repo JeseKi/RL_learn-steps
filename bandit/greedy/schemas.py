@@ -59,5 +59,7 @@ class GreedyRewardsState(BaseRewardsState):
             optimistic_init=optimistic_init,
             optimistic_times=optimistic_times,
             q_values=[initial_value] * num_machines,
-            q_values_optimistic=[optimistic_times] * num_machines if optimistic_init else [0] * num_machines,
+            q_values_optimistic=[optimistic_times] * num_machines
+            if optimistic_init
+            else [0] * num_machines,
         )

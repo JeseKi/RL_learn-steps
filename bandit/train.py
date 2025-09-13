@@ -30,6 +30,7 @@ class AverageMetrics(BaseModel):
     avg_convergence_steps: float
     avg_convergence_rate: float
 
+
 def batch_train(
     count: int,
     agent_factory: Callable[..., BaseAgent],
@@ -73,6 +74,7 @@ def batch_train(
         process_logger=process_logger,
     )
     return agents, reward, metrics
+
 
 def train(
     agents: List[BaseAgent],
@@ -150,7 +152,9 @@ def _round(
             _printed[1] = True
 
 
-def _calculate_averages(agents: List[BaseAgent]) -> Tuple[BaseRewardsState, AverageMetrics]:
+def _calculate_averages(
+    agents: List[BaseAgent],
+) -> Tuple[BaseRewardsState, AverageMetrics]:
     """计算平均指标
 
     Args:
