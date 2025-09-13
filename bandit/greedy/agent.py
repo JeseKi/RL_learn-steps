@@ -74,6 +74,7 @@ class GreedyAgent(BaseAgent):
                 if r > 0:
                     machine_id = greedy_rewards.q_values_optimistic.index(r)
                     greedy_rewards.q_values_optimistic[machine_id] -= 1
+                    self.steps += 1
                     return machine_id
 
             self.optimistic_inited = True
