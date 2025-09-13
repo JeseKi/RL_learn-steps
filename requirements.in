@@ -10,5 +10,4 @@ pydantic
 uv
 ruff
 ty
-mypy
 pytest

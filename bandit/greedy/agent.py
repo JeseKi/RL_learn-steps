@@ -10,7 +10,6 @@ from typing import Callable, cast
 
 from core.agent import BaseAgent
 from core.environment import RLEnv
-from core.schemas import Metrics
 from .schemas import GreedyRewardsState
 from .config import EpsilonDecreasingConfig, EpsilonDecreasingState
 

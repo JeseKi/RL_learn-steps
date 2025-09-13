@@ -11,7 +11,6 @@ import numpy as np
 
 from core.agent import BaseAgent
 from core.environment import RLEnv
-from core.schemas import Metrics
 from .schemas import UCB1RewardsState
 
 

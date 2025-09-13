@@ -20,9 +20,7 @@ from matplotlib.font_manager import FontProperties
 import numpy as np
 
 from pathlib import Path
-import json
 
-from utils.schemas import ProcessDataDump
 
 
 def plot_metrics_history(agents: List[BaseAgent], agent_name: str, file_name: Path):

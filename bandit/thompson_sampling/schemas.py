@@ -4,6 +4,7 @@
 """
 
 from __future__ import annotations
+from typing import cast
 
 from pydantic import Field
 import numpy as np
@@ -22,7 +23,7 @@ class TSRewardsState(BaseRewardsState):
         Returns:
             int: 采样结果最佳的机器ID
         """
-        _beta = rng.beta(self.alpha, self.beta)
+        _beta = cast(np.ndarray, rng.beta(self.alpha, self.beta))
         best_machine = int(_beta.argmax())
         return best_machine
             
