@@ -4,14 +4,13 @@
 - ucb1: UCB1算法实现
 """
 
-import random
 import numpy as np
 
 from .schemas import UCB1RewardsState
 
 
 # UCB1 系算法
-def ucb1(rewards: UCB1RewardsState, rng: random.Random, steps: int, **__) -> int:
+def ucb1(rewards: UCB1RewardsState, _: np.random.Generator, steps: int, **__) -> int:
     """UCB1 算法：基于置信区间的上界选择最优的老虎机"""
     if not rewards.ucb_states.ucb_inited:
         return rewards.ucb_states.ucb_inited_index

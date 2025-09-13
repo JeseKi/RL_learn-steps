@@ -6,7 +6,7 @@
 
 from abc import ABC, abstractmethod
 from typing import List, Tuple
-import random
+import numpy as np
 
 from .environment import RLEnv
 from .schemas import BaseRewardsState, Metrics
@@ -32,13 +32,13 @@ class BaseAgent(ABC):
             convergence_min_steps (int): 最小收敛步数
             seed (int): 随机种子
         """
-        self.name = name
-        self.seed = seed
-        self.rng = random.Random(self.seed)
-        self.env = env
+        self.name: str = name
+        self.seed: int = seed
+        self.rng: np.random.Generator = np.random.default_rng(self.seed)
+        self.env: RLEnv = env
         self.steps: int = 0
         self.metrics_history: List[Tuple[BaseRewardsState, Metrics, int]] = []
-        self.rewards: BaseRewardsState = BaseRewardsState.from_env(env)
+        self.rewards: BaseRewardsState = BaseRewardsState.from_env(env=env, initial_value=0.0, initial_count=0)
         self.convergence_threshold = convergence_threshold
         self.convergence_min_steps = convergence_min_steps
         self.convergence_steps = 0
@@ -65,38 +65,37 @@ class BaseAgent(ABC):
         """
         raise NotImplementedError("子类必须实现 pull_machine 方法")
 
-    @abstractmethod
-    def metric(self) -> Metrics:
-        """获取当前指标
-
-        Returns:
-            Metrics: 当前评估指标
-        """
-        raise NotImplementedError("子类必须实现 metric 方法")
-
-    @abstractmethod
     def regret(self) -> float:
-        """计算后悔值
+        """计算后悔值"""
+        return self.env.best_reward(self.steps) - sum(self.rewards.values)
 
-        Returns:
-            float: 后悔值
-        """
-        raise NotImplementedError("子类必须实现 regret 方法")
-
-    @abstractmethod
     def regret_rate(self) -> float:
-        """计算后悔率
+        """计算后悔率"""
+        if self.steps == 0:
+            return 0.0
+        return self.regret() / self.env.best_reward(self.steps)
 
-        Returns:
-            float: 后悔率
-        """
-        raise NotImplementedError("子类必须实现 regret_rate 方法")
-
-    @abstractmethod
     def optimal_rate(self) -> float:
-        """计算最优臂选择率
+        """计算最优臂选择率"""
+        if self.steps == 0:
+            return 0.0
+        return self.rewards.counts[-1] / self.steps
 
-        Returns:
-            float: 最优臂选择率
-        """
-        raise NotImplementedError("子类必须实现 optimal_rate 方法")
+    def metric(self) -> Metrics:
+        """获取当前指标"""
+        return Metrics(
+            regret=self.regret(),
+            regret_rate=self.regret_rate(),
+            rewards=self.rewards.model_copy(deep=True),
+            optimal_rate=self.optimal_rate(),
+        )
+
+    def _check_convergence(self):
+        """检查是否达到收敛条件"""
+        if self.steps < self.convergence_min_steps or self.convergence_steps > 0:
+            return
+
+        if self.optimal_rate() >= self.convergence_threshold:
+            self.convergence_steps = self.steps
+            print(f"达到收敛时的步数: {self.convergence_steps}")
+            return

@@ -58,7 +58,7 @@ class GreedyAgent(BaseAgent):
             min_epsilon=epsilon_config.min_epsilon,
         )
         self.rewards = GreedyRewardsState.from_env(
-            env,
+            env=env,
             optimistic_init=optimistic_init,
             optimistic_times=optimistic_times,
         )
@@ -100,38 +100,3 @@ class GreedyAgent(BaseAgent):
         # Q(A) ← Q(A) + (R - Q(A)) / N(A)
         old_q = greedy_rewards.q_values[machine_id]
         greedy_rewards.q_values[machine_id] = old_q + (reward - old_q) / count
-
-    def _check_convergence(self):
-        """检查是否达到收敛条件"""
-        if self.steps < self.convergence_min_steps or self.convergence_steps > 0:
-            return
-
-        if self.optimal_rate() >= self.convergence_threshold:
-            self.convergence_steps = self.steps
-            print(f"达到收敛时的步数: {self.convergence_steps}")
-            return
-
-    def regret(self) -> float:
-        """计算后悔值"""
-        return self.env.best_reward(self.steps) - sum(self.rewards.values)
-
-    def regret_rate(self) -> float:
-        """计算后悔率"""
-        if self.steps == 0:
-            return 0.0
-        return self.regret() / self.env.best_reward(self.steps)
-
-    def optimal_rate(self) -> float:
-        """计算最优臂选择率"""
-        if self.steps == 0:
-            return 0.0
-        return self.rewards.counts[-1] / self.steps
-
-    def metric(self) -> Metrics:
-        """获取当前指标"""
-        return Metrics(
-            regret=self.regret(),
-            regret_rate=self.regret_rate(),
-            rewards=self.rewards.model_copy(deep=True),
-            optimal_rate=self.optimal_rate(),
-        )

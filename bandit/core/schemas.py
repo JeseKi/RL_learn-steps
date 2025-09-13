@@ -8,11 +8,15 @@
 from __future__ import annotations
 
 from typing import List
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
+from .environment import RLEnv
 
 class BaseRewardsState(BaseModel):
     """基础奖励状态模型"""
+    model_config = ConfigDict(
+        arbitrary_types_allowed=True
+    )
 
     values: List[float] = Field(description="每个机器的累积奖励")
     counts: List[float] = Field(description="每个机器的拉动次数")
@@ -20,7 +24,7 @@ class BaseRewardsState(BaseModel):
     @classmethod
     def from_env(
         cls,
-        env,
+        env: RLEnv,
         initial_value: float = 0.0,
         initial_count: int = 0,
     ) -> BaseRewardsState:

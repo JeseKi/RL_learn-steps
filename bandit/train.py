@@ -10,7 +10,7 @@
 - _calculate_averages: 聚合训练结束后的平均指标
 """
 
-from typing import Callable, List, Tuple, Optional, Dict, Any
+from typing import Callable, List, Tuple, Dict, Any
 
 from pydantic import BaseModel
 

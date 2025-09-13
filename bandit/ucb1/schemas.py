@@ -7,7 +7,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from pydantic import Field, ConfigDict
+from pydantic import Field
 import numpy as np
 
 from core.schemas import BaseRewardsState
@@ -22,9 +22,6 @@ class UCBInitState:
 
 class UCB1RewardsState(BaseRewardsState):
     """UCB1 Agent 获得的奖励记录"""
-
-    model_config = ConfigDict(arbitrary_types_allowed=True)
-
     q_values: np.ndarray = Field(default_factory=lambda: np.zeros(0, dtype=np.float64), description="每个机器的Q值")
     ucb_values: np.ndarray = Field(default_factory=lambda: np.zeros(0, dtype=np.float64), description="每个机器的UCB值")
     
