@@ -20,8 +20,15 @@ from core import BaseAgent
 from utils.plot_font import _ensure_matplotlib
 
 
-def plot_metrics_history(agents: List[BaseAgent], agent_name: str, file_name: Path):
-    """根据训练后的一组 agent 的 metrics_history 绘制指标变化图。"""
+def plot_metrics_history(agents: List[BaseAgent], agent_name: str, file_name: Path, x_log: bool = False):
+    """根据训练后的一组 agent 的 metrics_history 绘制指标变化图。
+    
+    Args:
+        agents: 训练后的 agent 列表
+        agent_name: agent 名称
+        file_name: 保存文件路径
+        x_log: 是否使用对数刻度显示 X 轴
+    """
     if not agents:
         raise ValueError("Agents 列表为空，无法绘图")
 
@@ -86,11 +93,14 @@ def plot_metrics_history(agents: List[BaseAgent], agent_name: str, file_name: Pa
         ax.set_title(title, fontproperties=font_prop)
         ax.set_xlabel("时间步 (Steps)", fontproperties=font_prop)
         ax.set_ylabel("平均值", fontproperties=font_prop)
+        if x_log:
+            ax.set_xscale("log")
         ax.grid(True, linestyle="--", alpha=0.6)
         ax.legend(prop=font_prop)
 
     plt.tight_layout(rect=(0, 0, 1, 0.96))
     file_name = file_name.with_suffix(".png") if file_name.suffix != ".png" else file_name
+    file_name = file_name.with_stem(file_name.stem + "_x_log") if x_log else file_name
     fig.savefig(file_name)
     print(f"✅ 图表已保存至 {file_name}")
 
