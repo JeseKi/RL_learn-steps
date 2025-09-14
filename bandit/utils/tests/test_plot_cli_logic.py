@@ -6,6 +6,7 @@ from utils.plot import (
     find_pairwise_intersections_for_metric,
     find_axis_intersections_for_series,
 )
+from utils.plot_cli import compute_avg_convergence_steps_by_algo
 
 
 def make_run(agent: str, steps, values: dict) -> ProcessRun:
@@ -123,3 +124,73 @@ def test_aggregate_means_handles_duplicates_within_run():
     assert s.steps == steps
     import numpy as np
     np.testing.assert_allclose(s.values, [1.5 * x for x in steps], rtol=1e-6)
+
+
+def test_compute_avg_convergence_steps_by_algo():
+    # 构造包含两个 seed 的 run：seed1 收敛步数 1000，seed2 收敛步数 2000
+    steps = [10, 100000]
+    points = []
+    # seed 1：在最后一步写入 convergence_steps=1000
+    points.append(
+        ProcessPoint(
+            step=10,
+            data=ProcessPointData(
+                agent_name="algoC",
+                seed=1,
+                regret=0.0,
+                regret_rate=0.0,
+                total_reward=0.0,
+                optimal_rate=0.0,
+                convergence_steps=0,
+            ),
+        )
+    )
+    points.append(
+        ProcessPoint(
+            step=100000,
+            data=ProcessPointData(
+                agent_name="algoC",
+                seed=1,
+                regret=0.0,
+                regret_rate=0.0,
+                total_reward=0.0,
+                optimal_rate=1.0,
+                convergence_steps=1000,
+            ),
+        )
+    )
+    # seed 2：在最后一步写入 convergence_steps=2000
+    points.append(
+        ProcessPoint(
+            step=10,
+            data=ProcessPointData(
+                agent_name="algoC",
+                seed=2,
+                regret=0.0,
+                regret_rate=0.0,
+                total_reward=0.0,
+                optimal_rate=0.0,
+                convergence_steps=0,
+            ),
+        )
+    )
+    points.append(
+        ProcessPoint(
+            step=100000,
+            data=ProcessPointData(
+                agent_name="algoC",
+                seed=2,
+                regret=0.0,
+                regret_rate=0.0,
+                total_reward=0.0,
+                optimal_rate=1.0,
+                convergence_steps=2000,
+            ),
+        )
+    )
+    run = ProcessRun(points=points)
+
+    grouped = {"algoC": [run]}
+    avg = compute_avg_convergence_steps_by_algo(grouped)
+    assert "algoC" in avg
+    assert abs(avg["algoC"] - 1500.0) < 1e-6

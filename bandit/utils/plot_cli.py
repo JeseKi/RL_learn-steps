@@ -12,7 +12,7 @@
 - 使用 utils.schemas 中的 AggregatedResult。
 """
 
-from typing import Dict, Optional, Sequence
+from typing import Dict, Optional, Sequence, Mapping, List, DefaultDict
 from pathlib import Path
 import numpy as np
 
@@ -24,6 +24,41 @@ from utils.plot_intersections import (
     find_pairwise_intersections_for_metric,
 )
 from utils.plot_aggregate import group_runs_by_agent, aggregate_means_by_agent
+from utils.schemas import ProcessRun
+
+
+def compute_avg_convergence_steps_by_algo(grouped: Mapping[str, Sequence[ProcessRun]]) -> Dict[str, float]:
+    """计算每个算法的“平均收敛步数”（按 seed 聚合后求均值）。
+
+    口径说明：
+    - 对于同一个算法的每个 run：按 seed 分组，取该 seed 在整个 run 中出现过的最大 convergence_steps
+      作为该 seed 的收敛步数（未收敛则为 0）；
+    - 将一个算法所有 run 的所有 seed 的收敛步数汇总后取均值，得到该算法的平均收敛步数。
+
+    数据流：
+    - 输入 grouped：{算法名 -> [ProcessRun, ...]}（run 内含多个采样点，且同一步可能包含多个 seed 的记录）；
+    - 针对每个算法：遍历其 runs，按 seed 累积该 seed 的最大 convergence_steps；
+    - 将所有 seed 的步数合并求均值；
+    - 返回 {算法名 -> 平均收敛步数(float)}。
+    """
+    avg_by_algo: Dict[str, float] = {}
+    for algo, runs in grouped.items():
+        per_seed_all: List[int] = []
+        for r in runs:
+            seed_to_conv: Dict[int, int] = {}
+            for pt in r.points:
+                seed = int(pt.data.seed) if pt.data.seed is not None else -1
+                conv = int(getattr(pt.data, "convergence_steps", 0) or 0)
+                prev = seed_to_conv.get(seed, 0)
+                if conv > prev:
+                    seed_to_conv[seed] = conv
+            if seed_to_conv:
+                per_seed_all.extend(seed_to_conv.values())
+        if per_seed_all:
+            avg_by_algo[algo] = float(np.mean(per_seed_all))
+        else:
+            avg_by_algo[algo] = float("nan")
+    return avg_by_algo
 
 
 def _plot_2x2(
@@ -35,6 +70,7 @@ def _plot_2x2(
     show: bool = False,
     debug: bool = False,
     x_log: bool = False,
+    avg_conv_by_algo: Optional[Dict[str, float]] = None,
 ) -> None:
     plt, font_prop, title_font_prop = _ensure_matplotlib()
     fig, axes = plt.subplots(2, 2, figsize=(16, 10), dpi=120)
@@ -80,14 +116,31 @@ def _plot_2x2(
                 else:
                     ax.annotate("X轴交点", (mk.x, mk.y), textcoords="offset points", xytext=(5, -10), fontsize=9, color=c, fontproperties=font_prop)
         if metric == "optimal_rate":
+            # 阈值参考线
             ax.axhline(0.9, color="#999999", linestyle=":", linewidth=1.2, label="收敛阈值 90%")
+            # 标注“收敛@步数”，步数采用“平均收敛步数”（按 seed 求均值），避免与单算法口径不一致
             for algo, s in algo_to_series.items():
                 arr = np.array(s.values, dtype=float)
-                idxs = np.where(arr >= 0.9)[0]
-                if idxs.size > 0:
-                    i = int(idxs[0])
-                    ax.scatter([s.steps[i]], [arr[i]], color=algo_to_color[algo], s=30, zorder=3)
-                    ax.annotate(f"收敛@{s.steps[i]}", (s.steps[i], float(arr[i])), textcoords="offset points", xytext=(6, -12), fontsize=9, color=algo_to_color[algo], fontproperties=font_prop)
+                # 目标步数：优先使用按 seed 的平均收敛步数；否则回退为“平均曲线首次过阈值”的步数
+                target_step: Optional[float] = None
+                if avg_conv_by_algo and algo in avg_conv_by_algo and np.isfinite(avg_conv_by_algo[algo]):
+                    target_step = float(avg_conv_by_algo[algo])
+                    # 在曲线上选择与目标步数最接近的采样点用于标注位置
+                    idx = int(np.argmin(np.abs(np.array(s.steps, dtype=float) - target_step)))
+                else:
+                    idxs = np.where(arr >= 0.9)[0]
+                    idx = int(idxs[0]) if idxs.size > 0 else 0
+                    target_step = float(s.steps[idx])
+                ax.scatter([s.steps[idx]], [arr[idx]], color=algo_to_color[algo], s=30, zorder=3)
+                ax.annotate(
+                    f"收敛@{int(round(target_step))}",
+                    (s.steps[idx], float(arr[idx])),
+                    textcoords="offset points",
+                    xytext=(6, -12),
+                    fontsize=9,
+                    color=algo_to_color[algo],
+                    fontproperties=font_prop,
+                )
         series_by_algo = {algo: s.values for algo, s in algo_to_series.items()}
         crosses = find_pairwise_intersections_for_metric(steps, series_by_algo, min_gap_ratio=min_cross_gap_ratio)
         for cp in crosses:
@@ -124,6 +177,7 @@ def cli_main(argv: Optional[Sequence[str]] = None) -> int:
             raise SystemExit(f"文件不存在：{p}")
     grouped = group_runs_by_agent(paths)
     aggregated = aggregate_means_by_agent(grouped)
+    avg_conv_by_algo = compute_avg_convergence_steps_by_algo(grouped)
     if args.title is None:
         algos = sorted(grouped.keys())
         args.title = " vs. ".join(algos) if algos else "算法指标对比"
@@ -135,6 +189,7 @@ def cli_main(argv: Optional[Sequence[str]] = None) -> int:
         show=bool(args.show),
         debug=bool(args.debug),
         x_log=bool(args.x_log),
+        avg_conv_by_algo=avg_conv_by_algo,
     )
     print(f"✅ 图表已保存：{args.out}")
     return 0
