@@ -28,6 +28,47 @@ def make_run(agent: str, steps, values: dict) -> ProcessRun:
     return ProcessRun(points=points)
 
 
+def make_run_with_duplicates(agent: str, steps, values_a: dict, values_b: dict) -> ProcessRun:
+    """构造在同一步存在多条记录（模拟多 seed）的 ProcessRun。
+
+    - values_a/values_b: 按指标提供两组值，长度与 steps 一致；
+    - 本构造函数会为每个 step 追加两条记录（seed=1 与 seed=2）。
+    """
+    points = []
+    for i, s in enumerate(steps):
+        # 第一条记录（seed=1）
+        points.append(
+            ProcessPoint(
+                step=s,
+                data=ProcessPointData(
+                    agent_name=agent,
+                    seed=1,
+                    regret=float(values_a.get("regret", [0] * len(steps))[i]),
+                    regret_rate=float(values_a.get("regret_rate", [0] * len(steps))[i]),
+                    total_reward=float(values_a.get("total_reward", [0] * len(steps))[i]),
+                    optimal_rate=float(values_a.get("optimal_rate", [0] * len(steps))[i]),
+                    convergence_steps=0,
+                ),
+            )
+        )
+        # 第二条记录（seed=2）
+        points.append(
+            ProcessPoint(
+                step=s,
+                data=ProcessPointData(
+                    agent_name=agent,
+                    seed=2,
+                    regret=float(values_b.get("regret", [0] * len(steps))[i]),
+                    regret_rate=float(values_b.get("regret_rate", [0] * len(steps))[i]),
+                    total_reward=float(values_b.get("total_reward", [0] * len(steps))[i]),
+                    optimal_rate=float(values_b.get("optimal_rate", [0] * len(steps))[i]),
+                    convergence_steps=0,
+                ),
+            )
+        )
+    return ProcessRun(points=points)
+
+
 def test_aggregate_means_by_agent_basic():
     steps = list(range(1, 11))
     run1 = make_run("algoA", steps, {"total_reward": [float(s) for s in steps]})
@@ -62,3 +103,23 @@ def test_find_axis_intersections_for_series():
     has_y_axis = any(m.axis == "y" for m in marks)
     assert has_y_axis
 
+
+def test_aggregate_means_handles_duplicates_within_run():
+    # 构造单个 run，其中每个 step 有两条记录（模拟两个 seed），
+    # total_reward 两组分别是 s 与 2*s，聚合后应为 1.5*s。
+    steps = [1, 2, 3, 4]
+    run_dup = make_run_with_duplicates(
+        "algoX",
+        steps,
+        {"total_reward": [float(s) for s in steps]},
+        {"total_reward": [float(2 * s) for s in steps]},
+    )
+    grouped = {"algoX": [run_dup]}
+    agg = aggregate_means_by_agent(grouped)
+    series_list = agg.metrics["total_reward"]
+    assert len(series_list) == 1
+    s = series_list[0]
+    assert s.algorithm == "algoX"
+    assert s.steps == steps
+    import numpy as np
+    np.testing.assert_allclose(s.values, [1.5 * x for x in steps], rtol=1e-6)
