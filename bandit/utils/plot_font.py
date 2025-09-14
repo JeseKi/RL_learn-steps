@@ -24,6 +24,7 @@ def _ensure_matplotlib():
     """
     try:
         import matplotlib
+
         matplotlib.use("Agg")  # 非交互后端
         import matplotlib.pyplot as plt
         from matplotlib.font_manager import FontProperties
@@ -50,8 +51,5 @@ def _ensure_matplotlib():
     else:
         font_prop = FontProperties(size=12)
         title_font_prop = FontProperties(size=16)
-        print(
-            f"⚠️ 未找到中文字体文件 {font_path}，将使用默认字体（可能出现方框）。"
-        )
+        print(f"⚠️ 未找到中文字体文件 {font_path}，将使用默认字体（可能出现方框）。")
     return plt, font_prop, title_font_prop
-

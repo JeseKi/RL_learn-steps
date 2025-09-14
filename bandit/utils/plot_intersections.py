@@ -55,13 +55,17 @@ def find_pairwise_intersections_for_metric(
             if (d0 == 0.0) or (d0 * d1 < 0):
                 x0, x1 = float(steps[i]), float(steps[i + 1])
                 dy_a = ya[i + 1] - ya[i]
-                dd = (d1 - d0)
+                dd = d1 - d0
                 t = 0.0 if dd == 0 else (-d0 / dd)
                 t = max(0.0, min(1.0, t))
                 x_cross = x0 + t * (x1 - x0)
                 y_cross = ya[i] + t * dy_a
                 if i - last_mark_idx >= min_gap:
-                    results.append(IntersectionPoint(x=x_cross, y=y_cross, algo_a=a, algo_b=b, metric=""))
+                    results.append(
+                        IntersectionPoint(
+                            x=x_cross, y=y_cross, algo_a=a, algo_b=b, metric=""
+                        )
+                    )
                     last_mark_idx = i
     return results
 
@@ -82,7 +86,11 @@ def find_axis_intersections_for_series(
     # Y 轴（近左边界）
     left_dist = float(steps[0]) - x_min
     if left_dist <= 0.01 * x_range:
-        results.append(AxisIntersection(axis="y", x=float(steps[0]), y=y_vals[0], algorithm="", metric=""))
+        results.append(
+            AxisIntersection(
+                axis="y", x=float(steps[0]), y=y_vals[0], algorithm="", metric=""
+            )
+        )
     # X 轴（y≈0），且后续值需低于初始值
     if min(y_vals[1:] or [y_vals[0]]) < y_vals[0]:
         threshold = 0.01 * y_range
@@ -92,7 +100,10 @@ def find_axis_intersections_for_series(
                 x0, x1 = float(steps[i]), float(steps[i + 1])
                 x_cross, y_cross = _linear_interp(x0, y0, x1, y1, y=0.0)
                 if abs(y_cross - 0.0) <= threshold:
-                    results.append(AxisIntersection(axis="x", x=x_cross, y=y_cross, algorithm="", metric=""))
+                    results.append(
+                        AxisIntersection(
+                            axis="x", x=x_cross, y=y_cross, algorithm="", metric=""
+                        )
+                    )
                     break
     return results
-

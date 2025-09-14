@@ -22,4 +22,3 @@ METRICS_FOR_2x2: Tuple[str, str, str, str] = (
     "regret",
     "regret_rate",
 )
-

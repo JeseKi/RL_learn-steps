@@ -45,4 +45,3 @@ __all__ = [
     "find_axis_intersections_for_series",
     "cli_main",
 ]
-

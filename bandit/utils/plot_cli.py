@@ -12,7 +12,7 @@
 - 使用 utils.schemas 中的 AggregatedResult。
 """
 
-from typing import Dict, Optional, Sequence, Mapping, List, DefaultDict
+from typing import Dict, Optional, Sequence, Mapping, List
 from pathlib import Path
 import numpy as np
 
@@ -27,7 +27,9 @@ from utils.plot_aggregate import group_runs_by_agent, aggregate_means_by_agent
 from utils.schemas import ProcessRun
 
 
-def compute_avg_convergence_steps_by_algo(grouped: Mapping[str, Sequence[ProcessRun]]) -> Dict[str, float]:
+def compute_avg_convergence_steps_by_algo(
+    grouped: Mapping[str, Sequence[ProcessRun]],
+) -> Dict[str, float]:
     """计算每个算法的“平均收敛步数”（按 seed 聚合后求均值）。
 
     口径说明：
@@ -84,8 +86,18 @@ def _plot_2x2(
         "regret_rate": "后悔率",
     }
     import itertools as _it
+
     colors = [
-        "#4E79A7","#F28E2B","#E15759","#76B7B2","#59A14F","#EDC948","#B07AA1","#FF9DA7","#9C755F","#BAB0AC",
+        "#4E79A7",
+        "#F28E2B",
+        "#E15759",
+        "#76B7B2",
+        "#59A14F",
+        "#EDC948",
+        "#B07AA1",
+        "#FF9DA7",
+        "#9C755F",
+        "#BAB0AC",
     ]
     color_cycle = _it.cycle(colors)
     for ax, metric in zip(axes, METRICS_FOR_2x2):
@@ -93,7 +105,9 @@ def _plot_2x2(
         if not series_list:
             ax.set_visible(False)
             continue
-        algo_to_series: Dict[str, AggregatedSeries] = {s.algorithm: s for s in series_list}
+        algo_to_series: Dict[str, AggregatedSeries] = {
+            s.algorithm: s for s in series_list
+        }
         steps = series_list[0].steps
         # 轴尺度
         if x_log:
@@ -112,26 +126,56 @@ def _plot_2x2(
             for mk in axis_marks:
                 ax.scatter([mk.x], [mk.y], color=c, s=20, zorder=3)
                 if mk.axis == "y":
-                    ax.annotate("Y轴附近", (mk.x, mk.y), textcoords="offset points", xytext=(5, 5), fontsize=9, color=c, fontproperties=font_prop)
+                    ax.annotate(
+                        "Y轴附近",
+                        (mk.x, mk.y),
+                        textcoords="offset points",
+                        xytext=(5, 5),
+                        fontsize=9,
+                        color=c,
+                        fontproperties=font_prop,
+                    )
                 else:
-                    ax.annotate("X轴交点", (mk.x, mk.y), textcoords="offset points", xytext=(5, -10), fontsize=9, color=c, fontproperties=font_prop)
+                    ax.annotate(
+                        "X轴交点",
+                        (mk.x, mk.y),
+                        textcoords="offset points",
+                        xytext=(5, -10),
+                        fontsize=9,
+                        color=c,
+                        fontproperties=font_prop,
+                    )
         if metric == "optimal_rate":
             # 阈值参考线
-            ax.axhline(0.9, color="#999999", linestyle=":", linewidth=1.2, label="收敛阈值 90%")
+            ax.axhline(
+                0.9, color="#999999", linestyle=":", linewidth=1.2, label="收敛阈值 90%"
+            )
             # 标注“收敛@步数”，步数采用“平均收敛步数”（按 seed 求均值），避免与单算法口径不一致
             for algo, s in algo_to_series.items():
                 arr = np.array(s.values, dtype=float)
                 # 目标步数：优先使用按 seed 的平均收敛步数；否则回退为“平均曲线首次过阈值”的步数
                 target_step: Optional[float] = None
-                if avg_conv_by_algo and algo in avg_conv_by_algo and np.isfinite(avg_conv_by_algo[algo]):
+                if (
+                    avg_conv_by_algo
+                    and algo in avg_conv_by_algo
+                    and np.isfinite(avg_conv_by_algo[algo])
+                ):
                     target_step = float(avg_conv_by_algo[algo])
                     # 在曲线上选择与目标步数最接近的采样点用于标注位置
-                    idx = int(np.argmin(np.abs(np.array(s.steps, dtype=float) - target_step)))
+                    idx = int(
+                        np.argmin(np.abs(np.array(s.steps, dtype=float) - target_step))
+                    )
                 else:
                     idxs = np.where(arr >= 0.9)[0]
                     idx = int(idxs[0]) if idxs.size > 0 else 0
                     target_step = float(s.steps[idx])
-                ax.scatter([s.steps[idx]], [arr[idx]], color=algo_to_color[algo], s=30, zorder=3)
+                ax.scatter(
+                    [s.steps[idx]],
+                    [arr[idx]],
+                    color=algo_to_color[algo],
+                    s=30,
+                    zorder=3,
+                )
                 ax.annotate(
                     f"收敛@{int(round(target_step))}",
                     (s.steps[idx], float(arr[idx])),
@@ -142,10 +186,20 @@ def _plot_2x2(
                     fontproperties=font_prop,
                 )
         series_by_algo = {algo: s.values for algo, s in algo_to_series.items()}
-        crosses = find_pairwise_intersections_for_metric(steps, series_by_algo, min_gap_ratio=min_cross_gap_ratio)
+        crosses = find_pairwise_intersections_for_metric(
+            steps, series_by_algo, min_gap_ratio=min_cross_gap_ratio
+        )
         for cp in crosses:
             ax.scatter([cp.x], [cp.y], color="#444444", s=16, zorder=3)
-            ax.annotate(f"交点@{cp.x:.0f}", (cp.x, cp.y), textcoords="offset points", xytext=(6, 6), fontsize=8, color="#444", fontproperties=font_prop)
+            ax.annotate(
+                f"交点@{cp.x:.0f}",
+                (cp.x, cp.y),
+                textcoords="offset points",
+                xytext=(6, 6),
+                fontsize=8,
+                color="#444",
+                fontproperties=font_prop,
+            )
         ax.set_title(metric_titles.get(metric, metric), fontproperties=font_prop)
         ax.set_xlabel("步数", fontproperties=font_prop)
         ax.set_ylabel("值", fontproperties=font_prop)
@@ -161,13 +215,29 @@ def _plot_2x2(
 
 def cli_main(argv: Optional[Sequence[str]] = None) -> int:
     import argparse
-    parser = argparse.ArgumentParser(description="过程数据 2x2 指标对比绘图（均值聚合，交点/收敛标注）")
+
+    parser = argparse.ArgumentParser(
+        description="过程数据 2x2 指标对比绘图（均值聚合，交点/收敛标注）"
+    )
     parser.add_argument("files", nargs="+", help="一个或多个 *process.json 文件路径")
-    parser.add_argument("-o", "--out", default="experiment_data/metrics_compare.png", help="输出图片路径")
+    parser.add_argument(
+        "-o",
+        "--out",
+        default="experiment_data/metrics_compare.png",
+        help="输出图片路径",
+    )
     parser.add_argument("--title", default=None, help="图表标题")
-    parser.add_argument("--min-cross-gap", type=float, default=0.1, help="交点最小间距占比（默认 0.1）")
-    parser.add_argument("--show", action="store_true", help="绘制后显示图像（默认不显示）")
-    parser.add_argument("--x-log", action="store_true", help="将 X 轴改为对数尺度（指数增长视图，基数10）")
+    parser.add_argument(
+        "--min-cross-gap", type=float, default=0.1, help="交点最小间距占比（默认 0.1）"
+    )
+    parser.add_argument(
+        "--show", action="store_true", help="绘制后显示图像（默认不显示）"
+    )
+    parser.add_argument(
+        "--x-log",
+        action="store_true",
+        help="将 X 轴改为对数尺度（指数增长视图，基数10）",
+    )
     parser.add_argument("--debug", action="store_true", help="输出调试信息")
     args = parser.parse_args(list(argv) if argv is not None else None)
 
@@ -193,6 +263,7 @@ def cli_main(argv: Optional[Sequence[str]] = None) -> int:
     )
     print(f"✅ 图表已保存：{args.out}")
     return 0
+
 
 if __name__ == "__main__":
     cli_main()

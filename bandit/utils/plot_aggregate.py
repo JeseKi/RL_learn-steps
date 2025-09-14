@@ -14,7 +14,7 @@
 - 使用 utils.schemas 中的 ProcessRun、AggregatedSeries、AggregatedResult。
 """
 
-from typing import Dict, List, Mapping, Sequence, DefaultDict
+from typing import Dict, List, Mapping, Sequence
 from pathlib import Path
 import json
 import numpy as np
@@ -51,7 +51,9 @@ def _intersect_sorted_steps(step_lists: Sequence[Sequence[int]]) -> List[int]:
     return sorted(s)
 
 
-def aggregate_means_by_agent(grouped: Mapping[str, Sequence[ProcessRun]]) -> AggregatedResult:
+def aggregate_means_by_agent(
+    grouped: Mapping[str, Sequence[ProcessRun]],
+) -> AggregatedResult:
     """对每个算法进行“按步聚合均值”。
 
     关键修正：
@@ -68,7 +70,9 @@ def aggregate_means_by_agent(grouped: Mapping[str, Sequence[ProcessRun]]) -> Agg
         3) 输出 AggregatedSeries；
     - 返回 AggregatedResult。
     """
-    series_by_metric: Dict[str, List[AggregatedSeries]] = {m: [] for m in METRICS_FOR_2x2}
+    series_by_metric: Dict[str, List[AggregatedSeries]] = {
+        m: [] for m in METRICS_FOR_2x2
+    }
     for agent_name, runs in grouped.items():
         if not runs:
             continue
@@ -114,6 +118,11 @@ def aggregate_means_by_agent(grouped: Mapping[str, Sequence[ProcessRun]]) -> Agg
         # 3) 输出序列
         for m in METRICS_FOR_2x2:
             series_by_metric[m].append(
-                AggregatedSeries(metric=m, algorithm=agent_name, steps=common_steps, values=values_acc[m])  # type: ignore[call-arg]
+                AggregatedSeries(
+                    metric=m,
+                    algorithm=agent_name,
+                    steps=common_steps,
+                    values=values_acc[m],
+                )  # type: ignore[call-arg]
             )
     return AggregatedResult(metrics=series_by_metric)

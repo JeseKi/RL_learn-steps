@@ -20,9 +20,11 @@ from core import BaseAgent
 from utils.plot_font import _ensure_matplotlib
 
 
-def plot_metrics_history(agents: List[BaseAgent], agent_name: str, file_name: Path, x_log: bool = False):
+def plot_metrics_history(
+    agents: List[BaseAgent], agent_name: str, file_name: Path, x_log: bool = False
+):
     """根据训练后的一组 agent 的 metrics_history 绘制指标变化图。
-    
+
     Args:
         agents: 训练后的 agent 列表
         agent_name: agent 名称
@@ -68,7 +70,9 @@ def plot_metrics_history(agents: List[BaseAgent], agent_name: str, file_name: Pa
                     step_metrics["total_reward"].append(sum(metrics.rewards.values))
                     step_metrics["optimal_rate"].append(metrics.optimal_rate)
                     step_metrics["convergence_steps"].append(agent.convergence_steps)
-                    step_metrics["convergence_rate"].append(1 if agent.convergence_steps > 0 else 0)
+                    step_metrics["convergence_rate"].append(
+                        1 if agent.convergence_steps > 0 else 0
+                    )
                     break
         for key in metrics_history:
             metrics_history[key].append(
@@ -89,7 +93,13 @@ def plot_metrics_history(agents: List[BaseAgent], agent_name: str, file_name: Pa
     }
     for i, (metric_key, title) in enumerate(plot_config.items()):
         ax = axes[i]
-        ax.plot(recorded_steps_list, metrics_history[metric_key], label=title, marker="o", markersize=3)
+        ax.plot(
+            recorded_steps_list,
+            metrics_history[metric_key],
+            label=title,
+            marker="o",
+            markersize=3,
+        )
         ax.set_title(title, fontproperties=font_prop)
         ax.set_xlabel("时间步 (Steps)", fontproperties=font_prop)
         ax.set_ylabel("平均值", fontproperties=font_prop)
@@ -99,8 +109,9 @@ def plot_metrics_history(agents: List[BaseAgent], agent_name: str, file_name: Pa
         ax.legend(prop=font_prop)
 
     plt.tight_layout(rect=(0, 0, 1, 0.96))
-    file_name = file_name.with_suffix(".png") if file_name.suffix != ".png" else file_name
+    file_name = (
+        file_name.with_suffix(".png") if file_name.suffix != ".png" else file_name
+    )
     file_name = file_name.with_stem(file_name.stem + "_x_log") if x_log else file_name
     fig.savefig(file_name)
     print(f"✅ 图表已保存至 {file_name}")
-

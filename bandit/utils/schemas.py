@@ -61,6 +61,7 @@ class ProcessDataDump(BaseModel):
 
 # ------- 绘图/聚合模型（用于 utils.plot 的公开接口） -------
 
+
 class ProcessPointData(BaseModel):
     """单个 step 的结构化指标数据。"""
 
