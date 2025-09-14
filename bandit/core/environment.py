@@ -33,13 +33,16 @@ class RLEnv:
                 SlotMachine(reward_probability=(i + 1) / (machine_count + 1), seed=seed)
             )
 
-        self.best_reward_machine: SlotMachine = self.machines[
-            -1
-        ]  # 初始化代码中，对老虎机列表的初始化就是最后一个老虎机是奖励期望最高的
+        random.shuffle(self.machines)
+
+        self.best_reward_machine: SlotMachine = max(
+            self.machines, key=lambda machine: machine.reward_probability
+        )
+        self.best_machine_index: int = self.machines.index(self.best_reward_machine)
 
     def pull(self, machine_id: int) -> int:
         assert 0 <= machine_id < len(self.machines)
         return self.machines[machine_id].pull()
 
     def best_reward(self, steps: int) -> float:
-        return self.machines[-1].reward_probability * steps
+        return self.best_reward_machine.reward_probability * steps

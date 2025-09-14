@@ -81,7 +81,7 @@ class BaseAgent(ABC):
         """计算最优臂选择率"""
         if self.steps == 0:
             return 0.0
-        return self.rewards.counts[-1] / self.steps
+        return self.rewards.counts[self.env.best_machine_index] / self.steps
 
     def metric(self) -> Metrics:
         """获取当前指标"""
