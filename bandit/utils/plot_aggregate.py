@@ -119,7 +119,7 @@ def aggregate_means_by_agent(
         for m in METRICS_FOR_2x2:
             series_by_metric[m].append(
                 AggregatedSeries(
-                    metric=m,
+                    metric=m, # type: ignore # 误报
                     algorithm=agent_name,
                     steps=common_steps,
                     values=values_acc[m],
