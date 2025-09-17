@@ -39,7 +39,7 @@ def epsilon_decreasing_greedy(
 ) -> int:
     """ε-递减贪婪算法：ε 随时间递减，其余时间选累计奖励最高的"""
     if rng.random() < epsilon_state.epsilon:
-        action = rng.integers(0, len(rewards.values))
+        action = int(rng.integers(0, len(rewards.values)))
     else:
         action = rewards.values.index(max(rewards.values))
 
@@ -73,7 +73,7 @@ def epsilon_decreasing_average(
 ) -> int:
     """ε-递减贪婪算法：基于 Q 值，ε 随时间递减"""
     if rng.random() < epsilon_state.epsilon:
-        action = rng.integers(0, len(rewards.q_values))
+        action = int(rng.integers(0, len(rewards.q_values)))
     else:
         action = rewards.q_values.index(max(rewards.q_values))
 
