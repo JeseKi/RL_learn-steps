@@ -44,7 +44,7 @@ class TSAgent(BaseAgent):
         return ts_rewards.get_best_machine(self.rng)
 
     def pull_machine(self, machine_id: int) -> int:
-        reward = self.env.pull(machine_id)
+        reward = self.env.pull(machine_id, self.steps)
         self._update_rewards(machine_id, reward)
         self._check_convergence()
         return reward

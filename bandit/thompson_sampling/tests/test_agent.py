@@ -78,5 +78,5 @@ def test_ts_agent_pull_machine_invalid_machine_id_raises():
     n = 3
     agent = _make_env_and_agent(machine_count=n, seed=99)
 
-    with pytest.raises(AssertionError):
+    with pytest.raises(ValueError, match="机器ID超出范围"):
         _ = agent.pull_machine(n)  # 越界：有效索引为 [0, n-1]

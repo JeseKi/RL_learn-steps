@@ -7,11 +7,21 @@
 
 from __future__ import annotations
 
-from typing import List
+from typing import TYPE_CHECKING, List
+from enum import Enum
+
 from pydantic import BaseModel, ConfigDict, Field
 
-from .environment import RLEnv
+if TYPE_CHECKING:
+    from .environment import RLEnv
 
+
+class PiecewizeMethod(Enum):
+    """分段方法"""
+
+    UPSIDE_DOWN = "upside_down"
+    RESET = "reset"
+    ADDITION_SUBTRACTION = "addition_subtraction"
 
 class BaseRewardsState(BaseModel):
     """基础奖励状态模型"""

@@ -70,7 +70,7 @@ class UCBAgent(BaseAgent):
 
     def pull_machine(self, machine_id: int) -> int:
         """拉动指定机器并更新状态"""
-        reward = self.env.pull(machine_id)
+        reward = self.env.pull(machine_id, self.steps)
         self._update_q_value(machine_id, reward)
         self._check_convergence()
         return reward
