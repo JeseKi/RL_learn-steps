@@ -52,6 +52,8 @@ def test_ts_agent_pull_machine_updates_state():
     - alpha/beta 的具体更新策略不做强约束，仅断言其存在并执行了加一更新之一。
     """
     agent = _make_env_and_agent(machine_count=2, seed=1234)
+    # 设置 discount_factor 为 1.0 以确保测试不受折扣因子影响
+    agent.discount_factor = 1.0
 
     # 选择 0 号机器进行一次拉动
     machine_id = 0
