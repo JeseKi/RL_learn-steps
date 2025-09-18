@@ -7,6 +7,7 @@ from core import RLEnv
 import json
 from pathlib import Path
 
+
 def test_greedy_optimistic_init_steps_reach_T_and_log_grid(tmp_path: Path):
     """当启用乐观初始化时，也应当在每次 act 后累计全局步数，
     确保训练结束后 agent.steps == T，且过程记录命中网格中的最后一步 T。

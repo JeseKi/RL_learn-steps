@@ -16,9 +16,11 @@ from core.environment import RLEnv
 
 class GreedyRewardsState(BaseRewardsState):
     """贪婪 Agent 获得的奖励记录"""
-    
+
     q_values: List[float] = Field(default_factory=list, description="每个机器的Q值")
-    q_values_optimistic: List[float] = Field(default_factory=list, description="每个机器的乐观初始化Q值")
+    q_values_optimistic: List[float] = Field(
+        default_factory=list, description="每个机器的乐观初始化Q值"
+    )
 
     @classmethod
     def from_env(
@@ -47,8 +49,9 @@ class GreedyRewardsState(BaseRewardsState):
             q_values=[initial_value] * num_machines,
             q_values_optimistic=[optimistic_times] * num_machines
             if optimistic_init
-            else [0] * num_machines
+            else [0] * num_machines,
         )
+
 
 class GreedyType(BaseAlgorithmType):
     """贪婪算法类型"""

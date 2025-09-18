@@ -12,6 +12,7 @@ from core import BaseAgent, BaseAlgorithm
 from core.environment import RLEnv
 from .schemas import UCB1RewardsState, UCB1AlgorithmType
 
+
 class UCBAgent(BaseAgent[UCB1RewardsState, "UCB1Algorithm"]):
     """UCB1算法代理类"""
 
@@ -60,10 +61,12 @@ class UCBAgent(BaseAgent[UCB1RewardsState, "UCB1Algorithm"]):
         old_q = ucb_rewards.q_values[machine_id]
         ucb_rewards.q_values[machine_id] = old_q + (reward - old_q) / count
 
+
 @dataclass
 class UCBInitState:
     ucb_inited: bool = False
     ucb_inited_index: int = 0
+
 
 class UCB1Algorithm(BaseAlgorithm[UCBAgent, UCB1AlgorithmType]):
     def __init__(self, ucb1_type: UCB1AlgorithmType = UCB1AlgorithmType.UCB1) -> None:
@@ -75,7 +78,7 @@ class UCB1Algorithm(BaseAlgorithm[UCBAgent, UCB1AlgorithmType]):
 
     def run(self) -> int:
         return self.ucb1()
-    
+
     def ucb1(self) -> int:
         """UCB1 算法"""
         rewards = self.agent.rewards

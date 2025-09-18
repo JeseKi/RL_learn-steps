@@ -32,35 +32,35 @@ class RLEnv:
     """环境中包含多个老虎机，默认为 10 个"""
 
     def __init__(
-        self, 
+        self,
         machine_count: int = 10,
         random_walk_internal: int = 0,
         random_walk_machine_num: int = 0,
         piecewise_internal: int = 0,
         piecewize_method: PiecewizeMethod = PiecewizeMethod.UPSIDE_DOWN,
-        seed: int = 42
-        ) -> None:
+        seed: int = 42,
+    ) -> None:
         self.machines: List[SlotMachine] = []
         self.machine_count = machine_count
         self.seed = seed
-        
+
         self.rng = random.Random(seed)
         self.nprng = np.random.default_rng(seed)
 
         self._reset(machine_count)
-        
+
         self.best_reward_machine: SlotMachine = max(
             self.machines, key=lambda machine: machine.reward_probability
         )
         self.best_machine_index: int = self.machines.index(self.best_reward_machine)
-        
+
         self.piecewize_method: PiecewizeMethod = piecewize_method
         self.random_walk_internal = random_walk_internal
         self.random_walk_machine_num = random_walk_machine_num
         self.piecewise_internal = piecewise_internal
 
     def pull(self, machine_id: int, steps: int) -> int:
-        try: 
+        try:
             assert 0 <= machine_id < len(self.machines)
         except AssertionError:
             raise ValueError(f"机器ID超出范围: {machine_id}")
@@ -68,12 +68,12 @@ class RLEnv:
             self._random_walk_reward()
         if self.piecewise_internal > 0 and steps % self.piecewise_internal == 0:
             self._piecewize_reward()
-        
+
         return self.machines[machine_id].pull()
 
     def best_reward(self, steps: int) -> float:
         return self.best_reward_machine.reward_probability * steps
-    
+
     def _random_walk_reward(self) -> None:
         m = self.rng.sample(self.machines, self.random_walk_machine_num)
         samples = self.nprng.normal(0, 0.01, self.random_walk_machine_num)
@@ -82,8 +82,10 @@ class RLEnv:
             if r < 0 or r > 1:
                 r = machine.reward_probability - sample
             machine.reward_probability = r
-            
-        self.best_reward_machine = max(self.machines, key=lambda machine: machine.reward_probability)
+
+        self.best_reward_machine = max(
+            self.machines, key=lambda machine: machine.reward_probability
+        )
         self.best_machine_index = self.machines.index(self.best_reward_machine)
 
     def _piecewize_reward(self) -> None:
@@ -93,21 +95,23 @@ class RLEnv:
             self._reset(self.machine_count)
         elif self.piecewize_method == PiecewizeMethod.ADDITION_SUBTRACTION:
             self._addition_subtraction()
-        
-        self.best_reward_machine = max(self.machines, key=lambda machine: machine.reward_probability)
+
+        self.best_reward_machine = max(
+            self.machines, key=lambda machine: machine.reward_probability
+        )
         self.best_machine_index = self.machines.index(self.best_reward_machine)
-        
+
     def _upside_down(self) -> None:
         machines_sorted = sorted(self.machines, key=lambda m: m.reward_probability)
         n = len(machines_sorted)
-        
+
         for i, machine in enumerate(machines_sorted):
             machine.reward_probability = (n - 1 - i) / n
-    
+
     def _reset(self, machine_count: int) -> None:
         self.machines = []
         seed = int(self.rng.random() * 1000000)
-            
+
         for i in range(machine_count):
             self.machines.append(
                 SlotMachine(reward_probability=(i + 1) / (machine_count + 1), seed=seed)
@@ -115,7 +119,7 @@ class RLEnv:
 
         _rng = random.Random(seed)
         _rng.shuffle(self.machines)
-    
+
     def _addition_subtraction(self) -> None:
         for machine in self.machines:
             r = machine.reward_probability + 0.5

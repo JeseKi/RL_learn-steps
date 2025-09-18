@@ -11,6 +11,7 @@ from core.environment import RLEnv
 from .schemas import GreedyRewardsState, GreedyType
 from .config import EpsilonDecreasingConfig, EpsilonDecreasingState
 
+
 class GreedyAgent(BaseAgent[GreedyRewardsState, "GreedyAlgorithm"]):
     """贪婪算法代理类，继承自 BaseAgent"""
 
@@ -81,16 +82,22 @@ class GreedyAgent(BaseAgent[GreedyRewardsState, "GreedyAlgorithm"]):
         old_q = rewards.q_values[machine_id]
         rewards.q_values[machine_id] = old_q + (reward - old_q) / count
 
+
 class GreedyAlgorithm(BaseAlgorithm[GreedyAgent, GreedyType]):
-    def __init__(self, greedy_type: GreedyType, optimistic_init: bool = False, optimistic_times: int = 1) -> None:
+    def __init__(
+        self,
+        greedy_type: GreedyType,
+        optimistic_init: bool = False,
+        optimistic_times: int = 1,
+    ) -> None:
         super().__init__(greedy_type, GreedyAgent)
         self.optimistic_init = optimistic_init
         self.optimistic_times = optimistic_times
         self.optimistic_inited = False
-        
+
     def set_agent(self, agent: GreedyAgent) -> None:
         super().set_agent(agent)
-    
+
     def run(self) -> int:
         if self.optimistic_init and not self.optimistic_inited:
             machine_id: int
@@ -120,14 +127,14 @@ class GreedyAlgorithm(BaseAlgorithm[GreedyAgent, GreedyType]):
     # Q值贪婪算法
     def greedy(self) -> int:
         return self.agent.rewards.q_values.index(max(self.agent.rewards.q_values))
-    
+
     def epsilon(self) -> int:
         agent = self.agent
         if agent.rng.random() < agent.episode_state.epsilon:
             return int(agent.rng.integers(0, len(agent.rewards.q_values)))
         else:
             return agent.rewards.q_values.index(max(agent.rewards.q_values))
-        
+
     def epsilon_decreasing(self) -> int:
         agent = self.agent
         if agent.rng.random() < agent.episode_state.epsilon:
@@ -136,10 +143,11 @@ class GreedyAlgorithm(BaseAlgorithm[GreedyAgent, GreedyType]):
             action = agent.rewards.q_values.index(max(agent.rewards.q_values))
 
         agent.episode_state.epsilon = max(
-            agent.episode_state.min_epsilon, agent.episode_state.epsilon * agent.episode_state.decay
+            agent.episode_state.min_epsilon,
+            agent.episode_state.epsilon * agent.episode_state.decay,
         )
         return int(action)
-    
+
     # 累计奖励贪婪算法
     def greedy_accumulated(self) -> int:
         return self.agent.rewards.values.index(max(self.agent.rewards.values))
@@ -150,7 +158,7 @@ class GreedyAlgorithm(BaseAlgorithm[GreedyAgent, GreedyType]):
             return int(agent.rng.integers(0, len(agent.rewards.values)))
         else:
             return agent.rewards.values.index(max(agent.rewards.values))
-        
+
     def epsilon_decreasing_accumulated(self) -> int:
         """ε-递减贪婪算法：ε 随时间递减，其余时间选累计奖励最高的"""
         agent = self.agent
@@ -160,6 +168,7 @@ class GreedyAlgorithm(BaseAlgorithm[GreedyAgent, GreedyType]):
             action = agent.rewards.values.index(max(agent.rewards.values))
 
         agent.episode_state.epsilon = max(
-            agent.episode_state.min_epsilon, agent.episode_state.epsilon * agent.episode_state.decay
+            agent.episode_state.min_epsilon,
+            agent.episode_state.epsilon * agent.episode_state.decay,
         )
         return int(action)

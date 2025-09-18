@@ -10,6 +10,7 @@ from core import BaseAgent, BaseAlgorithm
 from core.environment import RLEnv
 from .schemas import TSRewardsState, TSAlgorithmType
 
+
 class TSAgent(BaseAgent[TSRewardsState, "TSAlgorithm"]):
     """TS 算法代理类"""
 
@@ -23,7 +24,9 @@ class TSAgent(BaseAgent[TSRewardsState, "TSAlgorithm"]):
         seed: int = 42,
     ) -> None:
         """TS 算法代理类初始化"""
-        super().__init__(name, env, algorithm, convergence_threshold, convergence_min_steps, seed)
+        super().__init__(
+            name, env, algorithm, convergence_threshold, convergence_min_steps, seed
+        )
 
         self.rewards = TSRewardsState.from_env(env=self.env)
 
@@ -47,16 +50,17 @@ class TSAgent(BaseAgent[TSRewardsState, "TSAlgorithm"]):
         else:
             ts_rewards.beta[machine_id] += 1
 
+
 class TSAlgorithm(BaseAlgorithm[TSAgent, TSAlgorithmType]):
     def __init__(self, ts_type: TSAlgorithmType = TSAlgorithmType.TS) -> None:
         super().__init__(ts_type, TSAgent)
-        
+
     def set_agent(self, agent: TSAgent) -> None:
         super().set_agent(agent)
-    
+
     def run(self) -> int:
         return self.ts()
-    
+
     def ts(self) -> int:
         r = self.agent.rewards
         beta = self.agent.rng.beta(r.alpha, r.beta)

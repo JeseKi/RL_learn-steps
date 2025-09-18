@@ -51,6 +51,7 @@ class UCB1RewardsState(BaseRewardsState):
             ucb_values=np.array([0.0] * num_machines, dtype=np.float64),
         )
 
+
 class UCB1AlgorithmType(BaseAlgorithmType):
     """UCB1算法类型"""
 

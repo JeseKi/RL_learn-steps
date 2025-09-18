@@ -27,6 +27,7 @@ class PiecewizeMethod(Enum):
     RESET = "reset"
     ADDITION_SUBTRACTION = "addition_subtraction"
 
+
 class BaseRewardsState(BaseModel):
     """基础奖励状态模型"""
 
@@ -48,9 +49,12 @@ class BaseRewardsState(BaseModel):
             counts=[initial_count] * num_machines,
         )
 
+
 class BaseAlgorithmType(str, Enum):
     """算法类型"""
+
     pass
+
 
 class Metrics(BaseModel):
     regret: float = Field(..., description="后悔值")
@@ -58,30 +62,33 @@ class Metrics(BaseModel):
     rewards: BaseRewardsState = Field(..., description="奖励")
     optimal_rate: float = Field(..., description="最佳臂命中率")
 
-AgentRewardState_T = TypeVar('AgentRewardState_T', bound=BaseRewardsState)
-AgentAlgorithm_T = TypeVar('AgentAlgorithm_T', bound="BaseAlgorithm")
-AlgorithmAgent_T = TypeVar('AlgorithmAgent_T', bound="BaseAgent")
-AlgorithmType_T = TypeVar('AlgorithmType_T', bound=BaseAlgorithmType)
+
+AgentRewardState_T = TypeVar("AgentRewardState_T", bound=BaseRewardsState)
+AgentAlgorithm_T = TypeVar("AgentAlgorithm_T", bound="BaseAlgorithm")
+AlgorithmAgent_T = TypeVar("AlgorithmAgent_T", bound="BaseAgent")
+AlgorithmType_T = TypeVar("AlgorithmType_T", bound=BaseAlgorithmType)
 
 
 class BaseAlgorithm(ABC, Generic[AlgorithmAgent_T, AlgorithmType_T]):
     """算法抽象基类"""
 
-    def __init__(self, algorithm_type: AlgorithmType_T, target_agent_type: Type[AlgorithmAgent_T]) -> None:
+    def __init__(
+        self, algorithm_type: AlgorithmType_T, target_agent_type: Type[AlgorithmAgent_T]
+    ) -> None:
         self._agent: AlgorithmAgent_T
         self._target_type: Type[AlgorithmAgent_T] = target_agent_type
         self.algorithm_type: AlgorithmType_T = algorithm_type
-        
+
     @property
     def agent(self) -> AlgorithmAgent_T:
         return self._agent
-        
+
     @abstractmethod
     def set_agent(self, agent: AlgorithmAgent_T) -> None:
         if not isinstance(agent, self._target_type):
             raise ValueError(f"Agent 必须是 {self._target_type} 类型")
         self._agent = agent
-    
+
     @abstractmethod
     def run(self) -> int:
         raise NotImplementedError("子类必须实现 run 方法")
@@ -99,16 +106,16 @@ class BaseAgent(ABC, Generic[AgentRewardState_T, AgentAlgorithm_T]):
         convergence_min_steps: int = 100,
         seed: int = 42,
     ) -> None:
-        """抽象代理基类初始化"""        
-        self.rewards: AgentRewardState_T 
-        
+        """抽象代理基类初始化"""
+        self.rewards: AgentRewardState_T
+
         self.name: str = name
         self.seed: int = seed
         self.rng: np.random.Generator = np.random.default_rng(self.seed)
         self.env: "RLEnv" = env
         self.algorithm: AgentAlgorithm_T = algorithm
         self.algorithm.set_agent(self)
-        
+
         self.steps: int = 0
         self.metrics_history: List[Tuple[BaseRewardsState, Metrics, int]] = []
         self.convergence_threshold = convergence_threshold

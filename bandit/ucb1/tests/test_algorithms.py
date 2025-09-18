@@ -54,7 +54,7 @@ def test_ucb1_after_all_initialized(ucb_agent):
     ucb_agent.rewards.values = [1.0, 0.5]
     ucb_agent.rewards.q_values = np.array([1.0, 0.5])
     ucb_agent.steps = 2
-    ucb_agent.algorithm.ucb_init_state.ucb_inited = True # 强制设置为已完成初始化
+    ucb_agent.algorithm.ucb_init_state.ucb_inited = True  # 强制设置为已完成初始化
 
     action = ucb_agent.algorithm.run()
 
@@ -77,7 +77,7 @@ def test_ucb1_all_counts_positive_low_steps(ucb_agent):
     ucb_agent.rewards.counts = [1, 1]
     ucb_agent.rewards.values = [0.5, 0.5]
     ucb_agent.rewards.q_values = np.array([0.5, 0.5])
-    ucb_agent.steps = 1 # log(1) = 0
+    ucb_agent.steps = 1  # log(1) = 0
     ucb_agent.algorithm.ucb_init_state.ucb_inited = True
 
     action = ucb_agent.algorithm.run()

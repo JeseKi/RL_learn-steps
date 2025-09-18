@@ -39,6 +39,7 @@ class TSRewardsState(BaseRewardsState):
             beta=np.array([1] * num_machines, dtype=np.float64),
         )
 
+
 class TSAlgorithmType(BaseAlgorithmType):
     """TS 算法类型"""
 
