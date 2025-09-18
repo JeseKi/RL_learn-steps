@@ -5,65 +5,40 @@
 """
 
 from __future__ import annotations
-
-from typing import cast, Callable
+from dataclasses import dataclass
 import numpy as np
 
-from core.agent import BaseAgent
+from core import BaseAgent, BaseAlgorithm
 from core.environment import RLEnv
-from .schemas import UCB1RewardsState
+from .schemas import UCB1RewardsState, UCB1AlgorithmType
 
-
-class UCBAgent(BaseAgent):
+class UCBAgent(BaseAgent[UCB1RewardsState, "UCB1Algorithm"]):
     """UCB1算法代理类"""
 
     def __init__(
         self,
         name: str,
         env: RLEnv,
-        ucb1_algorithm: Callable[..., int],
+        algorithm: "UCB1Algorithm",
         convergence_threshold: float = 0.9,
         convergence_min_steps: int = 100,
         seed: int = 42,
     ) -> None:
-        """UCB1算法代理初始化
-
-        Args:
-            name (str): 代理名称
-            env (RLEnv): 环境
-            ucb1_algorithm (Callable[..., int]): UCB1算法
-            convergence_threshold (float, optional): 收敛阈值
-            convergence_min_steps (int, optional): 最小收敛步数
-            seed (int, optional): 随机种子
-        """
+        """UCB1算法代理初始化"""
         super().__init__(
             name=name,
             env=env,
+            algorithm=algorithm,
             convergence_threshold=convergence_threshold,
             convergence_min_steps=convergence_min_steps,
             seed=seed,
         )
 
         self.rewards = UCB1RewardsState.from_env(env=env)
-        self.ucb1_algorithm = ucb1_algorithm
 
     def act(self, **_) -> int:
         """选择行动（拉动哪个老虎机）"""
-        ucb_rewards = cast(UCB1RewardsState, self.rewards)
-        steps = self.steps
-
-        if not ucb_rewards.ucb_states.ucb_inited:
-            choice = ucb_rewards.ucb_states.ucb_inited_index
-        else:
-            log_steps = np.log(steps) if steps > 0 else 0.0
-            counts_np = np.array(ucb_rewards.counts, dtype=np.float64)
-            q_values = ucb_rewards.q_values
-
-            ucb_values = q_values + np.sqrt(2 * log_steps / np.maximum(counts_np, 1))
-
-            ucb_rewards.ucb_values = ucb_values
-
-            choice = int(np.argmax(ucb_values))
+        choice = self.algorithm.run()
 
         self.steps += 1
         return choice
@@ -77,11 +52,44 @@ class UCBAgent(BaseAgent):
 
     def _update_q_value(self, machine_id: int, reward: int):
         """使用增量方式更新 Q 值"""
-        ucb_rewards = cast(UCB1RewardsState, self.rewards)
+        ucb_rewards = self.rewards
         ucb_rewards.counts[machine_id] += 1
         count = ucb_rewards.counts[machine_id]
         ucb_rewards.values[machine_id] += reward
 
-        # Q(A) ← Q(A) + (R - Q(A)) / N(A)
         old_q = ucb_rewards.q_values[machine_id]
         ucb_rewards.q_values[machine_id] = old_q + (reward - old_q) / count
+
+@dataclass
+class UCBInitState:
+    ucb_inited: bool = False
+    ucb_inited_index: int = 0
+
+class UCB1Algorithm(BaseAlgorithm[UCBAgent, UCB1AlgorithmType]):
+    def __init__(self, ucb1_type: UCB1AlgorithmType = UCB1AlgorithmType.UCB1) -> None:
+        super().__init__(ucb1_type, UCBAgent)
+        self.ucb_init_state = UCBInitState()
+
+    def set_agent(self, agent: UCBAgent) -> None:
+        super().set_agent(agent)
+
+    def run(self) -> int:
+        return self.ucb1()
+    
+    def ucb1(self) -> int:
+        """UCB1 算法"""
+        rewards = self.agent.rewards
+        steps = self.agent.steps
+
+        if not self.ucb_init_state.ucb_inited:
+            return self.ucb_init_state.ucb_inited_index
+
+        log_steps = np.log(steps) if steps > 0 else 0.0
+        counts_np = np.array(rewards.counts, dtype=np.float64)
+        q_values = rewards.q_values
+
+        ucb_values = q_values + np.sqrt(2 * log_steps / np.maximum(counts_np, 1))
+
+        rewards.ucb_values = ucb_values
+
+        return int(np.argmax(ucb_values))

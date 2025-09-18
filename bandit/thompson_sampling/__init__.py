@@ -1,4 +1,3 @@
-from .agent import TSAgent
-from .schemas import TSRewardsState
+from .agent import TSAgent, TSAlgorithm
 
-__all__ = ["TSAgent", "TSRewardsState"]
+__all__ = ["TSAgent", "TSRewardsState", "TSAlgorithmType", "TSAlgorithm"]

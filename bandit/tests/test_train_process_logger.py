@@ -2,8 +2,8 @@ import json
 from pathlib import Path
 
 from core.environment import RLEnv
-from greedy.agent import GreedyAgent
-from greedy.algorithms import greedy_average
+from greedy.agent import GreedyAgent, GreedyAlgorithm
+from greedy.schemas import GreedyType
 from utils.save_data import ProcessDataLogger
 from utils.schemas import ProcessDataDump
 from train import train
@@ -12,10 +12,11 @@ from train import train
 def test_train_with_process_logger(tmp_path: Path):
     # 构造环境与单个 Agent
     env = RLEnv(machine_count=5, seed=123)
+    algorithm = GreedyAlgorithm(greedy_type=GreedyType.GREEDY)
     agent = GreedyAgent(
         name="greedy_avg",
         env=env,
-        greedy_algorithm=greedy_average,
+        algorithm=algorithm,
         seed=1234,
     )
 

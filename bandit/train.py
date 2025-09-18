@@ -14,7 +14,7 @@ from typing import Callable, List, Tuple, Dict, Any
 
 from pydantic import BaseModel
 
-from core.agent import BaseAgent
+from core import BaseAgent
 from core.schemas import BaseRewardsState
 from core.environment import RLEnv
 from utils.save_data import ProcessDataLogger

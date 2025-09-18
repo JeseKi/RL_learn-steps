@@ -1,25 +1,24 @@
-import json
-from pathlib import Path
-
-from core.environment import RLEnv
-from greedy.agent import GreedyAgent
-from greedy.algorithms import greedy_average
+from greedy.agent import GreedyAgent, GreedyAlgorithm
+from greedy.schemas import GreedyType
 from utils.save_data import ProcessDataLogger
 from utils.schemas import ProcessDataDump
 from train import train
-
+from core import RLEnv
+import json
+from pathlib import Path
 
 def test_greedy_optimistic_init_steps_reach_T_and_log_grid(tmp_path: Path):
     """当启用乐观初始化时，也应当在每次 act 后累计全局步数，
     确保训练结束后 agent.steps == T，且过程记录命中网格中的最后一步 T。
     """
     env = RLEnv(machine_count=5, seed=2024)
+    algorithm = GreedyAlgorithm(
+        greedy_type=GreedyType.GREEDY, optimistic_init=True, optimistic_times=1
+    )
     agent = GreedyAgent(
         name="greedy_avg_opt",
         env=env,
-        greedy_algorithm=greedy_average,
-        optimistic_init=True,
-        optimistic_times=1,
+        algorithm=algorithm,
         seed=42,
     )
 

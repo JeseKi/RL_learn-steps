@@ -1,8 +1,13 @@
 """核心模块：包含项目的基础类和共享组件"""
 
-from .schemas import BaseRewardsState, Metrics, PiecewizeMethod
+from .schemas import (
+    BaseRewardsState, 
+    Metrics, 
+    PiecewizeMethod, 
+    BaseAgent, 
+    BaseAlgorithm
+)
 from .environment import SlotMachine, RLEnv
-from .agent import BaseAgent
 
 __all__ = [
     "SlotMachine",
@@ -10,5 +15,6 @@ __all__ = [
     "BaseRewardsState",
     "Metrics",
     "BaseAgent",
+    "BaseAlgorithm",
     "PiecewizeMethod",
 ]

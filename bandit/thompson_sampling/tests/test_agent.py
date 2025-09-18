@@ -20,7 +20,7 @@ from __future__ import annotations
 import pytest
 
 from core.environment import RLEnv
-from thompson_sampling.agent import TSAgent
+from thompson_sampling.agent import TSAgent, TSAlgorithm
 from thompson_sampling.schemas import TSRewardsState
 
 
@@ -32,9 +32,11 @@ def _make_env_and_agent(machine_count: int = 5, seed: int = 123) -> TSAgent:
     - 仅通过 TSAgent 的公开构造函数创建实例。
     """
     env = RLEnv(machine_count=machine_count, seed=seed)
+    algorithm = TSAlgorithm()
     agent = TSAgent(
         name="ts",
         env=env,
+        algorithm=algorithm,
         convergence_threshold=0.9,
         convergence_min_steps=10,
         seed=seed,

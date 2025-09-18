@@ -6,18 +6,11 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
 from pydantic import Field
 import numpy as np
 
-from core.schemas import BaseRewardsState
+from core.schemas import BaseRewardsState, BaseAlgorithmType
 from core.environment import RLEnv
-
-
-@dataclass
-class UCBInitState:
-    ucb_inited: bool = False
-    ucb_inited_index: int = 0
 
 
 class UCB1RewardsState(BaseRewardsState):
@@ -31,18 +24,6 @@ class UCB1RewardsState(BaseRewardsState):
         default_factory=lambda: np.zeros(0, dtype=np.float64),
         description="每个机器的UCB值",
     )
-
-    _ucb_states: UCBInitState = UCBInitState()
-
-    @property
-    def ucb_states(self) -> UCBInitState:
-        if not self._ucb_states.ucb_inited:
-            for i in range(len(self.counts)):
-                if self.counts[i] == 0:
-                    self._ucb_states.ucb_inited_index = i
-                    return self._ucb_states
-            self._ucb_states = UCBInitState(ucb_inited=True)
-        return self._ucb_states
 
     @classmethod
     def from_env(
@@ -69,3 +50,8 @@ class UCB1RewardsState(BaseRewardsState):
             q_values=np.array([initial_value] * num_machines, dtype=np.float64),
             ucb_values=np.array([0.0] * num_machines, dtype=np.float64),
         )
+
+class UCB1AlgorithmType(BaseAlgorithmType):
+    """UCB1算法类型"""
+
+    UCB1 = "ucb1"

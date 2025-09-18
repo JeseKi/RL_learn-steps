@@ -4,28 +4,17 @@
 """
 
 from __future__ import annotations
-from typing import cast
 
 from pydantic import Field
 import numpy as np
 
-from core.schemas import BaseRewardsState
+from core.schemas import BaseRewardsState, BaseAlgorithmType
 from core.environment import RLEnv
 
 
 class TSRewardsState(BaseRewardsState):
     alpha: np.ndarray = Field(..., description="每个机器的 alpha 参数")
     beta: np.ndarray = Field(..., description="每个机器的 beta 参数")
-
-    def get_best_machine(self, rng: np.random.Generator) -> int:
-        """获取 Beta 采样结果最佳的机器ID
-
-        Returns:
-            int: 采样结果最佳的机器ID
-        """
-        _beta = cast(np.ndarray, rng.beta(self.alpha, self.beta))
-        best_machine = int(_beta.argmax())
-        return best_machine
 
     @classmethod
     def from_env(
@@ -49,3 +38,8 @@ class TSRewardsState(BaseRewardsState):
             alpha=np.array([1] * num_machines, dtype=np.float64),
             beta=np.array([1] * num_machines, dtype=np.float64),
         )
+
+class TSAlgorithmType(BaseAlgorithmType):
+    """TS 算法类型"""
+
+    TS = "ts"
