@@ -23,7 +23,7 @@ class GreedyAgent(BaseAgent[GreedyRewardsState, "GreedyAlgorithm"]):
         epsilon_config: EpsilonDecreasingConfig = EpsilonDecreasingConfig(),
         convergence_threshold: float = 0.9,
         convergence_min_steps: int = 100,
-        constant_stepsize: float = 0.01,
+        constant_stepsize: float = 0,
         seed: int = 42,
     ) -> None:
         """贪婪算法代理初始化

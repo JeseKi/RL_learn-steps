@@ -69,6 +69,16 @@ class RLEnv:
 
     def best_reward(self, steps: int) -> float:
         return self.best_reward_machine.reward_probability * steps
+    
+    def clone(self) -> RLEnv:
+        return RLEnv(
+            machine_count=self.machine_count,
+            random_walk_internal=self.random_walk_internal,
+            random_walk_machine_num=self.random_walk_machine_num,
+            piecewise_internal=self.piecewise_internal,
+            piecewize_method=self.piecewize_method,
+            seed=self.seed,
+        )
 
     def _random_walk_reward(self) -> None:
         m = self.rng.sample(self.machines, self.random_walk_machine_num)
