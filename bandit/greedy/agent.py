@@ -23,6 +23,7 @@ class GreedyAgent(BaseAgent[GreedyRewardsState, "GreedyAlgorithm"]):
         epsilon_config: EpsilonDecreasingConfig = EpsilonDecreasingConfig(),
         convergence_threshold: float = 0.9,
         convergence_min_steps: int = 100,
+        constant_stepsize: float = 0.01,
         seed: int = 42,
     ) -> None:
         """贪婪算法代理初始化
@@ -57,6 +58,7 @@ class GreedyAgent(BaseAgent[GreedyRewardsState, "GreedyAlgorithm"]):
             optimistic_init=algorithm.optimistic_init,
             optimistic_times=algorithm.optimistic_times,
         )
+        self.constant_stepsize = constant_stepsize
 
     def act(self, **kwargs) -> int:
         """选择行动（拉动哪个老虎机）"""
@@ -73,14 +75,16 @@ class GreedyAgent(BaseAgent[GreedyRewardsState, "GreedyAlgorithm"]):
 
     def _update_q_value(self, machine_id: int, reward: int):
         """使用增量方式更新 Q 值"""
-        rewards = self.rewards
-        rewards.counts[machine_id] += 1
-        count = rewards.counts[machine_id]
-        rewards.values[machine_id] += reward
+        self.rewards.counts[machine_id] += 1
+        count = self.rewards.counts[machine_id]
+        self.rewards.values[machine_id] += reward
 
         # Q(A) ← Q(A) + (R - Q(A)) / N(A)
-        old_q = rewards.q_values[machine_id]
-        rewards.q_values[machine_id] = old_q + (reward - old_q) / count
+        old_q = self.rewards.q_values[machine_id]
+        if self.constant_stepsize:
+            self.rewards.q_values[machine_id] = old_q + self.constant_stepsize * (reward - old_q)
+        else:
+            self.rewards.q_values[machine_id] = old_q + (reward - old_q) / count
 
 
 class GreedyAlgorithm(BaseAlgorithm[GreedyAgent, GreedyType]):

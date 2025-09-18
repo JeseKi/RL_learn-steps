@@ -23,9 +23,20 @@ class UCBAgent(BaseAgent[UCB1RewardsState, "UCB1Algorithm"]):
         algorithm: "UCB1Algorithm",
         convergence_threshold: float = 0.9,
         convergence_min_steps: int = 100,
+        constant_stepsize: float = 0.01,
         seed: int = 42,
     ) -> None:
-        """UCB1算法代理初始化"""
+        """UCB1算法代理初始化
+
+        Args:
+            name (str): 名称
+            env (RLEnv): 环境
+            algorithm (UCB1Algorithm): 所使用的UCB1算法
+            convergence_threshold (float, optional): 达到收敛条件的阈值
+            convergence_min_steps (int, optional): 达到收敛条件的最小步数
+            constant_stepsize (float, optional): 常数步长
+            seed (int, optional): 种子
+        """
         super().__init__(
             name=name,
             env=env,
@@ -36,6 +47,7 @@ class UCBAgent(BaseAgent[UCB1RewardsState, "UCB1Algorithm"]):
         )
 
         self.rewards = UCB1RewardsState.from_env(env=env)
+        self.constant_stepsize = constant_stepsize
 
     def act(self, **_) -> int:
         """选择行动（拉动哪个老虎机）"""
@@ -53,13 +65,15 @@ class UCBAgent(BaseAgent[UCB1RewardsState, "UCB1Algorithm"]):
 
     def _update_q_value(self, machine_id: int, reward: int):
         """使用增量方式更新 Q 值"""
-        ucb_rewards = self.rewards
-        ucb_rewards.counts[machine_id] += 1
-        count = ucb_rewards.counts[machine_id]
-        ucb_rewards.values[machine_id] += reward
+        self.rewards.counts[machine_id] += 1
+        count = self.rewards.counts[machine_id]
+        self.rewards.values[machine_id] += reward
 
-        old_q = ucb_rewards.q_values[machine_id]
-        ucb_rewards.q_values[machine_id] = old_q + (reward - old_q) / count
+        old_q = self.rewards.q_values[machine_id]
+        if self.constant_stepsize:
+            self.rewards.q_values[machine_id] = old_q + self.constant_stepsize * (reward - old_q)
+        else:
+            self.rewards.q_values[machine_id] = old_q + (reward - old_q) / count
 
 
 @dataclass

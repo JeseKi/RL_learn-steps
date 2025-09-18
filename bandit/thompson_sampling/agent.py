@@ -21,6 +21,7 @@ class TSAgent(BaseAgent[TSRewardsState, "TSAlgorithm"]):
         algorithm: "TSAlgorithm",
         convergence_threshold: float = 0.9,
         convergence_min_steps: int = 100,
+        discount_factor: float = 0.9,
         seed: int = 42,
     ) -> None:
         """TS 算法代理类初始化"""
@@ -29,7 +30,8 @@ class TSAgent(BaseAgent[TSRewardsState, "TSAlgorithm"]):
         )
 
         self.rewards = TSRewardsState.from_env(env=self.env)
-
+        self.discount_factor = discount_factor
+    
     def act(self, **kwargs) -> int:
         self.steps += 1
         return self.algorithm.run()
@@ -41,14 +43,15 @@ class TSAgent(BaseAgent[TSRewardsState, "TSAlgorithm"]):
         return reward
 
     def _update_rewards(self, machine_id: int, reward: int):
-        ts_rewards = self.rewards
-        ts_rewards.counts[machine_id] += 1
-        ts_rewards.values[machine_id] += reward
+        self.rewards.counts[machine_id] += 1
+        self.rewards.values[machine_id] += reward
+        self.rewards.alpha[machine_id] *= self.discount_factor
+        self.rewards.beta[machine_id] *= self.discount_factor
 
         if reward > 0:
-            ts_rewards.alpha[machine_id] += 1
+            self.rewards.alpha[machine_id] += 1
         else:
-            ts_rewards.beta[machine_id] += 1
+            self.rewards.beta[machine_id] += 1
 
 
 class TSAlgorithm(BaseAlgorithm[TSAgent, TSAlgorithmType]):

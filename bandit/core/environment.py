@@ -7,15 +7,11 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, List
+from typing import List
 import random
 
 import numpy as np
 from .schemas import PiecewizeMethod
-
-if TYPE_CHECKING:
-    from .schemas import PiecewizeMethod
-
 
 class SlotMachine:
     """老虎机，每次拉动有一定概率获得奖励"""
