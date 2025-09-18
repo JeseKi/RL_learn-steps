@@ -47,7 +47,7 @@ class RLEnv:
         self.rng = random.Random(seed)
         self.nprng = np.random.default_rng(seed)
 
-        self._reset(machine_count, seed)
+        self._reset(machine_count)
         
         self.best_reward_machine: SlotMachine = max(
             self.machines, key=lambda machine: machine.reward_probability
@@ -76,21 +76,27 @@ class RLEnv:
     
     def _random_walk_reward(self) -> None:
         m = self.rng.sample(self.machines, self.random_walk_machine_num)
-        samples = self.nprng.normal(0, 1, self.random_walk_machine_num)
+        samples = self.nprng.normal(0, 0.01, self.random_walk_machine_num)
         for machine, sample in zip(m, samples):
             r = machine.reward_probability + sample
             if r < 0 or r > 1:
                 r = machine.reward_probability - sample
             machine.reward_probability = r
+            
+        self.best_reward_machine = max(self.machines, key=lambda machine: machine.reward_probability)
+        self.best_machine_index = self.machines.index(self.best_reward_machine)
 
     def _piecewize_reward(self) -> None:
         if self.piecewize_method == PiecewizeMethod.UPSIDE_DOWN:
             self._upside_down()
         elif self.piecewize_method == PiecewizeMethod.RESET:
-            self._reset(self.machine_count, self.seed)
+            self._reset(self.machine_count)
         elif self.piecewize_method == PiecewizeMethod.ADDITION_SUBTRACTION:
             self._addition_subtraction()
-    
+        
+        self.best_reward_machine = max(self.machines, key=lambda machine: machine.reward_probability)
+        self.best_machine_index = self.machines.index(self.best_reward_machine)
+        
     def _upside_down(self) -> None:
         machines_sorted = sorted(self.machines, key=lambda m: m.reward_probability)
         n = len(machines_sorted)
@@ -98,15 +104,17 @@ class RLEnv:
         for i, machine in enumerate(machines_sorted):
             machine.reward_probability = (n - 1 - i) / n
     
-    def _reset(self, machine_count: int, seed: int) -> None:
+    def _reset(self, machine_count: int) -> None:
         self.machines = []
+        seed = int(self.rng.random() * 1000000)
             
         for i in range(machine_count):
             self.machines.append(
                 SlotMachine(reward_probability=(i + 1) / (machine_count + 1), seed=seed)
             )
 
-        self.rng.shuffle(self.machines)
+        _rng = random.Random(seed)
+        _rng.shuffle(self.machines)
     
     def _addition_subtraction(self) -> None:
         for machine in self.machines:
