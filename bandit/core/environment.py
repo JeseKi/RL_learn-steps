@@ -70,14 +70,16 @@ class RLEnv:
     def best_reward(self, steps: int) -> float:
         return self.best_reward_machine.reward_probability * steps
     
-    def clone(self) -> RLEnv:
+    def clone(self, seed: int | None = None) -> RLEnv:
+        """复制当前环境结构，允许通过 seed 调整随机流"""
+
         return RLEnv(
             machine_count=self.machine_count,
             random_walk_internal=self.random_walk_internal,
             random_walk_machine_num=self.random_walk_machine_num,
             piecewise_internal=self.piecewise_internal,
             piecewize_method=self.piecewize_method,
-            seed=self.seed,
+            seed=self.seed if seed is None else seed,
         )
 
     def _random_walk_reward(self) -> None:
