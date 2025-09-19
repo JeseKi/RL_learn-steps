@@ -31,8 +31,7 @@ def ucb_agent(simple_env, ucb1_algorithm):
 
 def test_ucb1_initialization(ucb_agent):
     """测试初始化阶段：优先选择未探索过的臂"""
-    # 初始所有 counts=0，应按顺序选择，第一次是 0
-    ucb_agent.algorithm.ucb_init_state.ucb_inited_index = 0
+    # 初始所有 counts=0，应选择第一个未探索的臂，即 0
     action = ucb_agent.algorithm.run()
     assert action == 0
 
@@ -42,9 +41,21 @@ def test_ucb1_initialization(ucb_agent):
     ucb_agent.rewards.q_values[0] = 1.0
 
     # 现在 counts[1]=0，应选择 index 1
-    ucb_agent.algorithm.ucb_init_state.ucb_inited_index = 1
     action = ucb_agent.algorithm.run()
     assert action == 1
+
+    # 模拟拉动 arm 1
+    ucb_agent.rewards.counts[1] = 1
+    ucb_agent.rewards.values[1] = 0.5
+    ucb_agent.rewards.q_values[1] = 0.5
+    ucb_agent.steps = 2
+
+    # 现在所有臂都探索过，应使用 UCB 选择
+    action = ucb_agent.algorithm.run()
+    # UCB0 = 1.0 + sqrt(2*ln(2)/1) ≈ 2.177
+    # UCB1 = 0.5 + sqrt(2*ln(2)/1) ≈ 1.677
+    # 应选择 0
+    assert action == 0
 
 
 def test_ucb1_after_all_initialized(ucb_agent):

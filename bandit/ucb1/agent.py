@@ -98,8 +98,12 @@ class UCB1Algorithm(BaseAlgorithm[UCBAgent, UCB1AlgorithmType]):
         rewards = self.agent.rewards
         steps = self.agent.steps
 
+        for i in range(len(rewards.counts)):
+            if rewards.counts[i] == 0:
+                return i
+
         if not self.ucb_init_state.ucb_inited:
-            return self.ucb_init_state.ucb_inited_index
+            self.ucb_init_state.ucb_inited = True
 
         log_steps = np.log(steps) if steps > 0 else 0.0
         counts_np = np.array(rewards.counts, dtype=np.float64)
