@@ -59,7 +59,7 @@ def plot_metrics_history(
             "regret_rate": [],
             "total_reward": [],
             "optimal_rate": [],
-            "convergence_steps": [],
+            "convergence_steps": [],  # 仅存储已收敛的 Agent 的收敛步数
             "convergence_rate": [],
         }
         for agent in agents:
@@ -69,15 +69,23 @@ def plot_metrics_history(
                     step_metrics["regret_rate"].append(metrics.regret_rate)
                     step_metrics["total_reward"].append(sum(metrics.rewards.values))
                     step_metrics["optimal_rate"].append(metrics.optimal_rate)
-                    step_metrics["convergence_steps"].append(agent.convergence_steps)
+                    # 仅将已收敛的 Agent 的收敛步数纳入计算
+                    if agent.convergence_steps > 0:
+                        step_metrics["convergence_steps"].append(agent.convergence_steps)
                     step_metrics["convergence_rate"].append(
                         1 if agent.convergence_steps > 0 else 0
                     )
                     break
         for key in metrics_history:
-            metrics_history[key].append(
-                float(np.mean(step_metrics[key])) if step_metrics[key] else float("nan")
-            )
+            # 对于 convergence_steps，只计算已收敛 Agent 的平均值
+            if key == "convergence_steps":
+                metrics_history[key].append(
+                    float(np.mean(step_metrics[key])) if step_metrics[key] else float("nan")
+                )
+            else:
+                metrics_history[key].append(
+                    float(np.mean(step_metrics[key])) if step_metrics[key] else float("nan")
+                )
 
     fig, axes = plt.subplots(2, 3, figsize=(18, 12), dpi=100)
     fig.suptitle(f'"{agent_name}" 算法平均指标变化情况', fontproperties=title_font_prop)
