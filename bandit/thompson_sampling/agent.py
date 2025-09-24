@@ -49,6 +49,11 @@ class TSAgent(BaseAgent[TSRewardsState, "TSAlgorithm"]):
         if self.discount_factor:
             self.rewards.alpha[machine_id] *= self.discount_factor
             self.rewards.beta[machine_id] *= self.discount_factor
+            
+        if self.rewards.alpha[machine_id] <= 0: # 防止下溢
+            self.rewards.alpha[machine_id] = 0.001
+        if self.rewards.beta[machine_id] <= 0:
+            self.rewards.beta[machine_id] = 0.001
 
         if reward > 0:
             self.rewards.alpha[machine_id] += 1
