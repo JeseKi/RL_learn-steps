@@ -29,6 +29,69 @@ from typing import Any, Dict, List, Optional, Literal
 from pydantic import BaseModel, Field
 
 
+class ExperimentMeta(BaseModel):
+    """实验元信息数据模型
+
+    字段：
+    1. 运行日期 (run_date)
+    2. 运行 id (run_id)
+    3. 总步数 (total_steps)
+    4. 臂数量 (num_arms)
+    5. Agent 初始种子 (agent_seed)
+    6. Agent 算法名称 (agent_algorithm)
+    7. Agent 重复运行次数 (agent_runs)
+    8. 收敛阈值 (convergence_threshold)
+    9. 最低收敛步数 (min_convergence_steps)
+    10. 是否启用乐观初始化 (optimistic_initialization_enabled)
+    11. 乐观初始化次数 (optimistic_initialization_value)
+    12. 常数步长 (constant_alpha)
+    13. 折扣因子 (discount_factor)
+    14. 环境静态/动态 (environment_type)
+    15. 环境动态变化方法 (environment_dynamic_method)
+        1. 随机漫步间隔 (random_walk_interval)
+        2. 每次随机漫步所影响的机器数量 (random_walk_affected_arms)
+        3. 分段平稳间隔 (piecewise_stationary_interval)
+        4. 分段平稳方法 (piecewise_stationary_method)
+        5. 环境种子 (environment_seed)
+    """
+
+    run_date: str = Field(..., description="运行日期")
+    run_id: str = Field(..., description="运行 ID")
+    total_steps: int = Field(..., ge=1, description="总步数")
+    num_arms: int = Field(..., ge=1, description="臂数量")
+    agent_seed: Optional[int] = Field(default=None, description="Agent 初始种子")
+    agent_algorithm: str = Field(..., description="Agent 算法名称")
+    agent_runs: int = Field(..., ge=1, description="Agent 重复运行次数")
+    convergence_threshold: float = Field(..., description="收敛阈值")
+    min_convergence_steps: int = Field(..., ge=1, description="最低收敛步数")
+    optimistic_initialization_enabled: bool = Field(
+        ..., description="是否启用乐观初始化"
+    )
+    optimistic_initialization_value: Optional[float] = Field(
+        default=None, description="乐观初始化值"
+    )
+    constant_alpha: Optional[float] = Field(default=None, description="常数步长")
+    discount_factor: Optional[float] = Field(default=None, description="折扣因子")
+    environment_type: str = Field(..., description="环境类型 (静态/动态)")
+    environment_dynamic_method: Optional[str] = Field(
+        default=None, description="环境动态变化方法"
+    )
+    # 环境动态变化方法的参数
+    random_walk_interval: Optional[int] = Field(
+        default=None, ge=1, description="随机漫步间隔"
+    )
+    random_walk_affected_arms: Optional[int] = Field(
+        default=None, ge=1, description="每次随机漫步所影响的机器数量"
+    )
+    piecewise_stationary_interval: Optional[int] = Field(
+        default=None, ge=1, description="分段平稳间隔"
+    )
+    piecewise_stationary_method: Optional[str] = Field(
+        default=None, description="分段平稳方法"
+    )
+    environment_seed: Optional[int] = Field(default=None, description="环境种子")
+
+
 class ProcessDataPoint(BaseModel):
     """单条实验过程数据点
 

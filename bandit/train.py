@@ -72,10 +72,7 @@ def batch_train(
             env,
             steps,
             seed + i,
-            (
-                (base_env_seed)
-                + env_seed_offset * (i + 1)
-            ),
+            ((base_env_seed) + env_seed_offset * (i + 1)),
             convergence_threshold,
             convergence_min_steps,
             process_logger,
@@ -165,7 +162,7 @@ def _run_single_training(
     worker_logger = ProcessDataLogger(
         run_id=process_logger.run_id,
         total_steps=steps,
-        grid_size=getattr(process_logger, '_grid_size', 100),
+        grid_size=getattr(process_logger, "_grid_size", 100),
     )
 
     agent_kwargs = {
@@ -248,8 +245,12 @@ def _calculate_averages(
     rewards_list: List[BaseRewardsState] = [agent.rewards for agent in agents]
 
     # 使用 NumPy 向量化计算平均奖励
-    values_array = np.array([r.values for r in rewards_list])  # shape: (num_agents, num_machines)
-    counts_array = np.array([r.counts for r in rewards_list])  # shape: (num_agents, num_machines)
+    values_array = np.array(
+        [r.values for r in rewards_list]
+    )  # shape: (num_agents, num_machines)
+    counts_array = np.array(
+        [r.counts for r in rewards_list]
+    )  # shape: (num_agents, num_machines)
 
     avg_values = values_array.mean(axis=0).tolist()  # 按列求平均
     avg_counts = counts_array.mean(axis=0).tolist()  # 按列求平均
@@ -263,7 +264,9 @@ def _calculate_averages(
     regret_rates = np.array([m.regret_rate for m in metrics_list])
     rewards = np.array([sum(m.rewards.values) for m in metrics_list])
     optimal_rates = np.array([m.optimal_rate for m in metrics_list])
-    convergence_steps = np.array([getattr(agent, "convergence_steps", 0) for agent in agents])
+    convergence_steps = np.array(
+        [getattr(agent, "convergence_steps", 0) for agent in agents]
+    )
 
     avg_regret = regrets.mean()
     avg_regret_rate = regret_rates.mean()

@@ -82,7 +82,9 @@ class GreedyAgent(BaseAgent[GreedyRewardsState, "GreedyAlgorithm"]):
         # Q(A) ← Q(A) + (R - Q(A)) / N(A)
         old_q = self.rewards.q_values[machine_id]
         if self.constant_stepsize:
-            self.rewards.q_values[machine_id] = old_q + self.constant_stepsize * (reward - old_q)
+            self.rewards.q_values[machine_id] = old_q + self.constant_stepsize * (
+                reward - old_q
+            )
         else:
             self.rewards.q_values[machine_id] = old_q + (reward - old_q) / count
 

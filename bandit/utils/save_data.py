@@ -30,7 +30,7 @@ from typing import Any, Dict, List, Optional
 from pydantic import BaseModel
 
 from core.schemas import BaseRewardsState
-from utils.schemas import ProcessDataDump, ProcessDataPoint
+from utils.schemas import ProcessDataDump, ProcessDataPoint, ExperimentMeta
 
 
 def _normalize_step(step: int) -> int:
@@ -149,8 +149,10 @@ class ProcessDataLogger:
         self._grid_set = set(grid)
 
 
-def save_experiment_data(reward: BaseRewardsState, metrics: BaseModel, file_name: Path):
-    """保存实验最终结果（奖励 + 平均指标）为 JSON 文件。
+def save_experiment_data(
+    reward: BaseRewardsState, metrics: BaseModel, meta: ExperimentMeta, file_name: Path
+):
+    """保存实验最终结果（奖励 + 平均指标 + 元信息）为 JSON 文件。
 
     注意：该函数与“过程数据保存”解耦；若需保存过程数据，请使用 ProcessDataLogger。
     """
@@ -158,6 +160,7 @@ def save_experiment_data(reward: BaseRewardsState, metrics: BaseModel, file_name
     experiment_data = {
         "reward": reward.model_dump(),
         "metrics": metrics.model_dump(),
+        "meta": meta.model_dump(),
     }
 
     if not file_name.parent.exists():

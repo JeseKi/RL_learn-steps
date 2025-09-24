@@ -13,6 +13,7 @@ import random
 import numpy as np
 from .schemas import PiecewizeMethod
 
+
 class SlotMachine:
     """老虎机，每次拉动有一定概率获得奖励"""
 
@@ -69,7 +70,7 @@ class RLEnv:
 
     def best_reward(self, steps: int) -> float:
         return self.best_reward_machine.reward_probability * steps
-    
+
     def clone(self, seed: int | None = None) -> RLEnv:
         """复制当前环境结构，允许通过 seed 调整随机流"""
 

@@ -88,7 +88,9 @@ def test_batch_train_parallel_generates_independent_runs():
     by_seed = {}
     for point in dump.points:
         agent_seed = point.data["seed"]
-        by_seed.setdefault(agent_seed, []).append((point.step, point.data["total_reward"]))
+        by_seed.setdefault(agent_seed, []).append(
+            (point.step, point.data["total_reward"])
+        )
 
     assert len(by_seed) == 3
 
