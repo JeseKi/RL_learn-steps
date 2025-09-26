@@ -31,6 +31,7 @@ class RLEnv:
     def __init__(
         self,
         machine_count: int = 10,
+        enable_dynamic: bool = False,
         random_walk_internal: int = 0,
         random_walk_machine_num: int = 0,
         piecewise_internal: int = 0,
@@ -51,6 +52,7 @@ class RLEnv:
         )
         self.best_machine_index: int = self.machines.index(self.best_reward_machine)
 
+        self.enable_dynamic = enable_dynamic
         self.piecewize_method: PiecewizeMethod = piecewize_method
         self.random_walk_internal = random_walk_internal
         self.random_walk_machine_num = random_walk_machine_num
@@ -61,10 +63,11 @@ class RLEnv:
             assert 0 <= machine_id < len(self.machines)
         except AssertionError:
             raise ValueError(f"机器ID超出范围: {machine_id}")
-        if self.random_walk_internal > 0 and steps % self.random_walk_internal == 0:
-            self._random_walk_reward()
-        if self.piecewise_internal > 0 and steps % self.piecewise_internal == 0:
-            self._piecewize_reward()
+        if self.enable_dynamic:
+            if self.random_walk_internal > 0 and steps % self.random_walk_internal == 0:
+                self._random_walk_reward()
+            if self.piecewise_internal > 0 and steps % self.piecewise_internal == 0:
+                self._piecewize_reward()
 
         return self.machines[machine_id].pull()
 
@@ -76,6 +79,7 @@ class RLEnv:
 
         return RLEnv(
             machine_count=self.machine_count,
+            enable_dynamic=self.enable_dynamic,
             random_walk_internal=self.random_walk_internal,
             random_walk_machine_num=self.random_walk_machine_num,
             piecewise_internal=self.piecewise_internal,

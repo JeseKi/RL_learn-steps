@@ -6,7 +6,7 @@ TSAgent: Thompson Sampling 算法代理类
 
 from __future__ import annotations
 
-from core import BaseAgent, BaseAlgorithm
+from core.agent_abc import BaseAgent, BaseAlgorithm
 from core.environment import RLEnv
 from .schemas import TSRewardsState, TSAlgorithmType
 

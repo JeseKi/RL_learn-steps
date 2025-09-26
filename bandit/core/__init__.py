@@ -4,9 +4,9 @@ from .schemas import (
     BaseRewardsState,
     Metrics,
     PiecewizeMethod,
-    BaseAgent,
-    BaseAlgorithm,
 )
+from .agent_abc import BaseAgent, BaseAlgorithm
+
 from .environment import SlotMachine, RLEnv
 
 __all__ = [
