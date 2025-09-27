@@ -106,18 +106,8 @@ class BaseAgent(ABC, Generic[AgentRewardState_T, AgentAlgorithm_T]):
             optimal_rate=self.optimal_rate(),
         )
 
-    def _check_convergence(self):
-        """检查是否达到收敛条件"""
-        if self.steps < self.convergence_min_steps or self.convergence_steps > 0:
-            return
-
-        if self.optimal_rate() >= self.convergence_threshold:
-            self.convergence_steps = self.steps
-            print(f"达到收敛时的步数: {self.convergence_steps}")
-            return
-
     def _check_static_convergence(self):
-        """检查是否达到静态收敛条件"""
+        """检查是否达到收敛条件"""
         if self.steps < self.convergence_min_steps or self.convergence_steps > 0:
             return
 

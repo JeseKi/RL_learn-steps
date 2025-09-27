@@ -39,7 +39,7 @@ class TSAgent(BaseAgent[TSRewardsState, "TSAlgorithm"]):
     def pull_machine(self, machine_id: int) -> int:
         reward = self.env.pull(machine_id, self.steps)
         self._update_rewards(machine_id, reward)
-        self._check_convergence()
+        self._check_static_convergence()
         return reward
 
     def _update_rewards(self, machine_id: int, reward: int):
@@ -47,13 +47,19 @@ class TSAgent(BaseAgent[TSRewardsState, "TSAlgorithm"]):
         self.rewards.values[machine_id] += reward
 
         if self.discount_factor:
-            self.rewards.alpha[machine_id] *= self.discount_factor
-            self.rewards.beta[machine_id] *= self.discount_factor
+            i = 0
+            for a, b in zip(self.rewards.alpha, self.rewards.beta):
+                a *= self.discount_factor
+                b *= self.discount_factor
             
-        if self.rewards.alpha[machine_id] <= 0: # 防止下溢
-            self.rewards.alpha[machine_id] = 0.001
-        if self.rewards.beta[machine_id] <= 0:
-            self.rewards.beta[machine_id] = 0.001
+                if a <= 0: # 防止下溢
+                    a = 0.001
+                if b <= 0:
+                    b = 0.001
+
+                self.rewards.alpha[i] = a
+                self.rewards.beta[i] = b
+                i += 1
 
         if reward > 0:
             self.rewards.alpha[machine_id] += 1

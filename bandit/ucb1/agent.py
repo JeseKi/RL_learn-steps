@@ -60,7 +60,7 @@ class UCBAgent(BaseAgent[UCB1RewardsState, "UCB1Algorithm"]):
         """拉动指定机器并更新状态"""
         reward = self.env.pull(machine_id, self.steps)
         self._update_q_value(machine_id, reward)
-        self._check_convergence()
+        self._check_static_convergence()
         return reward
 
     def _update_q_value(self, machine_id: int, reward: int):
