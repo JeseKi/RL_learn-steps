@@ -43,24 +43,26 @@ class TSAgent(BaseAgent[TSRewardsState, "TSAlgorithm"]):
         return reward
 
     def _update_rewards(self, machine_id: int, reward: int):
+        """更新奖励统计信息
+
+        实现正确的折扣 Thompson Sampling 遗忘机制：
+        1. 先对所有臂的 alpha 和 beta 进行全局衰减（如果启用了 discount_factor）
+        2. 然后只对被选中的臂根据奖励更新 alpha 或 beta
+        """
         self.rewards.counts[machine_id] += 1
         self.rewards.values[machine_id] += reward
 
-        if self.discount_factor:
-            i = 0
-            for a, b in zip(self.rewards.alpha, self.rewards.beta):
-                a *= self.discount_factor
-                b *= self.discount_factor
-            
-                if a <= 0: # 防止下溢
-                    a = 0.001
-                if b <= 0:
-                    b = 0.001
+        if self.discount_factor > 0:
+            self.rewards.alpha *= self.discount_factor
+            self.rewards.beta *= self.discount_factor
 
-                self.rewards.alpha[i] = a
-                self.rewards.beta[i] = b
-                i += 1
+            # 防止数值下溢
+            underflow_mask_alpha = self.rewards.alpha <= 0
+            underflow_mask_beta = self.rewards.beta <= 0
+            self.rewards.alpha[underflow_mask_alpha] = 0.001
+            self.rewards.beta[underflow_mask_beta] = 0.001
 
+        # 只更新被选中的臂
         if reward > 0:
             self.rewards.alpha[machine_id] += 1
         else:
