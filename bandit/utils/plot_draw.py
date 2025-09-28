@@ -114,6 +114,30 @@ def plot_metrics_history(
             marker="o",
             markersize=3,
         )
+
+        # 获取该指标的最终性能值（最后一个非NaN值）
+        metric_values = metrics_history[metric_key]
+        final_value = None
+        for value in reversed(metric_values):
+            if not np.isnan(value):
+                final_value = value
+                break
+
+        # 添加最终性能水平线
+        if final_value is not None:
+            ax.axhline(
+                y=final_value,
+                color='red',
+                linestyle='--',
+                alpha=0.8,
+                label='最终性能'
+            )
+
+            # 在 Y 轴上标注最终性能数值
+            current_yticks = list(ax.get_yticks())
+            current_yticks.append(final_value)
+            ax.set_yticks(current_yticks)
+
         ax.set_title(title, fontproperties=font_prop)
         ax.set_xlabel("时间步 (Steps)", fontproperties=font_prop)
         ax.set_ylabel("平均值", fontproperties=font_prop)
