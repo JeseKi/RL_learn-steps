@@ -13,3 +13,4 @@ ty
 pytest
 mlflow[databricks]
 python-dotenv
+git+https://github.com/JeseKi/Bandit-Playground.git

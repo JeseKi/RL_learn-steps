@@ -5,3 +5,4 @@ __pycache__/
 experiment_data
 mlruns
 .env
+results
